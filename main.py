@@ -42,7 +42,7 @@ wlan.active(True)
 
 def network_connect(SSID, PSK):
     max_wait = 5
-    print("connecting...")
+    print("WiFi connecting...")
     wlan.config(pm=0xa11140) # Turn WiFi power saving off for some slow APs
     wlan.connect(SSID, PSK)
 
@@ -50,12 +50,14 @@ def network_connect(SSID, PSK):
         if wlan.status() < 0 or wlan.status() >= 3:
             break
         max_wait -= 1
-        print('waiting for connection...')
+        print('Waiting for connection...')
         time.sleep(1)
 
     if wlan.status() != 3:
-        print("Unable to connect. Attempting connection again")
-
+        print("WiFi connection failed, retrying")
+        
+    print("WiFi connected")
+          
 def sync_time():
     try:
         network_connect(WIFI_SSID, WIFI_PASSWORD)
@@ -64,8 +66,10 @@ def sync_time():
     if wlan.status() < 0 or wlan.status() >= 3:
         try:
             ntptime.settime()
+            print("NTP clock set")
         except OSError:
-            print("Unable to sync with NTP server. Check network and try again.")
+            print("NTP sync failed")
+            
 # Constants
 
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -93,6 +97,8 @@ image_path = f"{IMAGES_PATH}/{image_filename}"
 png_decoder.open_file(image_path)
 
 # Main Loop
+
+print("Main loop starting...")
 
 x_pos = 0
 
