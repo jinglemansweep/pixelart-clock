@@ -15,7 +15,10 @@ SCROLL_DELAY = 0.01
 
 TIME_POSITION = (2, 2)
 TIME_SHOW_SECONDS = False
+
 DATE_POSITION = (2, 16)
+DATE_SHOW_DAY = True
+DATE_SHORT_MONTH = True
 
 IMG_WIDTH = 256
 IMG_HEIGHT = 64
@@ -120,7 +123,13 @@ while True:
     now_hours, now_mins, now_secs = now[4:7]
     day_name = DAYS[now_dow]
     
-    date_str = "{} {:02d} {} {:04d}".format(day_name, now_day, MONTHS[now_month], now_year)
+    month_name = MONTHS[now_month]
+    if DATE_SHORT_MONTH:
+        month_name = month_name[:3]
+    if DATE_SHOW_DAY:
+        date_str = "{} {:02d} {} {:04d}".format(day_name, now_day, month_name, now_year)
+    else:
+        date_str = "{:02d} {} {:04d}".format(now_day, month_name, now_year)
 
     if TIME_SHOW_SECONDS:
         time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
