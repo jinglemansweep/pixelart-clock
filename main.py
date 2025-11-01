@@ -73,20 +73,26 @@ def sync_time():
 # Constants
 
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+IMAGES_PATH = "images"
+
 C_BLACK = display.create_pen(0, 0, 0)
 C_WHITE = display.create_pen(255, 255, 255)
 C_ORANGE = display.create_pen(255, 117, 24)
-IMAGES_PATH = "images"
+OUTLINE_SHADOW, OUTLINE_FULL = 1, 2
 
 # UI Helpers
 
-def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, shadow=False):
+def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, outline=None, outline_pen=C_BLACK):
     display.set_font(font)
-    if shadow:
-        display.set_pen(C_BLACK)
-        display.text(text, position[0] + 1, position[1] + 1, scale=scale)
+    x, y = position
+    if outline:
+        display.set_pen(outline_pen)
+        for offset_x in range(-1, 1):
+            for offset_y in range(-1, 1):
+                if outline == OUTLINE_FULL or (outline == OUTLINE_SHADOW and offset_x == 1 and offset_y == 1):
+                    display.text(text, x + offset_x, y + offset_y, scale=scale)
     display.set_pen(pen)
-    display.text(text, position[0], position[1], scale=scale)
+    display.text(text, x, y, scale=scale)
 
 # Init
 
@@ -125,8 +131,8 @@ while True:
     if x_pos < IMG_WIDTH:
        png_decoder.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
 
-    render_text(time_str, (2, 1), scale=2, shadow=True)
-    render_text(date_str, (2, 14), C_ORANGE, shadow=True)
+    render_text(time_str, (2, 1), scale=2, outline=OUTLINE_FULL)
+    render_text(date_str, (2, 14), C_ORANGE, outline=OUTLINE_FULL)
 
     i75.update()
     time.sleep(SCROLL_DELAY)
