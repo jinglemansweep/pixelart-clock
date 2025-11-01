@@ -48,11 +48,11 @@ except ValueError as e:
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
-def network_connect(SSID, PSK):
+def network_connect(ssid, psk):
     max_wait = 5
     print("WiFi connecting...")
     wlan.config(pm=0xa11140) # Turn WiFi power saving off for some slow APs
-    wlan.connect(SSID, PSK)
+    wlan.connect(ssid, psk)
 
     while max_wait > 0:
         if wlan.status() < 0 or wlan.status() >= 3:
