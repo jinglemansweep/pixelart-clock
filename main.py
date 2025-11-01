@@ -59,12 +59,23 @@ def sync_time():
             ntptime.settime()
         except OSError:
             print("Unable to sync with NTP server. Check network and try again.")
-
 # Constants
 
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+C_BLACK = display.create_pen(0, 0, 0)
 C_WHITE = display.create_pen(255, 255, 255)
 C_ORANGE = display.create_pen(255, 117, 24)
+
+# UI Helpers
+
+def render_text(text, position, pen=C_WHITE, font="", shadow=False):
+    display.set_font(font)
+    if shadow:
+        display.set_pen(C_BLACK)
+        display.text(text, position[0] + 1, position[1] + 1)
+    display.set_pen(pen)
+    display.text(text, position[0], position[1])
+
 # Variables
 
 WIDTH, HEIGHT = display.get_bounds()
@@ -108,13 +119,9 @@ while True:
     if x_pos < 0:
        p.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
 
-    display.set_font("bitmap8")
-    display.set_pen(C_WHITE)
-    display.text(time_str, 2, 2)
-    
-    display.set_font("bitmap6")
-    display.set_pen(C_ORANGE)
-    display.text(date_str, 2, 16)
-    
+    render_text(time_str, (2, 2), shadow=True)
+    render_text(date_str, (2, 16), C_ORANGE, shadow=True)
+
     i75.update()
     time.sleep(SCROLL_DELAY)
+
