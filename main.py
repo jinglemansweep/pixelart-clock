@@ -8,15 +8,21 @@ import time
 from random import choice
 from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64 as DISPLAY_INTERSTATE75
 
-# MACHINE
+# CONFIG
 
-rtc = machine.RTC()
+SCROLL_SPEED = 1
+SCROLL_DELAY = 0.01
+IMG_WIDTH = 256
+IMG_HEIGHT = 64
+IMG_SCALE = (1, 1)
 
-# DISPLAY
+# HARDWARE
 
 i75 = Interstate75(display=DISPLAY_INTERSTATE75, stb_invert=False, panel_type=Interstate75.PANEL_GENERIC)
 display = i75.display
 display.set_thickness(1)
+WIDTH, HEIGHT = display.get_bounds()
+rtc = machine.RTC()
 
 # NETWORK
 
@@ -66,6 +72,7 @@ DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 C_BLACK = display.create_pen(0, 0, 0)
 C_WHITE = display.create_pen(255, 255, 255)
 C_ORANGE = display.create_pen(255, 117, 24)
+IMAGES_PATH = "images"
 
 # UI Helpers
 
@@ -77,31 +84,23 @@ def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, shadow=Fal
     display.set_pen(pen)
     display.text(text, position[0], position[1], scale=scale)
 
-# Variables
-
-WIDTH, HEIGHT = display.get_bounds()
-SCROLL_SPEED = 1
-SCROLL_DELAY = 0.1
-IMG_WIDTH = 256
-IMG_HEIGHT = 64
-IMG_SCALE = (1, 1)
-
 # Init
 
 sync_time()
-p = pngdec.PNG(display)
-file = choice(os.listdir("covers"))
-img = f"covers/{file}"
-p.open_file(img)
+png_decoder = pngdec.PNG(display)
+image_filename = choice(os.listdir(IMAGES_PATH))
+image_path = f"{IMAGES_PATH}/{image_filename}"
+png_decoder.open_file(image_path)
 
-x_pos = WIDTH
+# Main Loop
+
+x_pos = 0
 
 while True:
     
     now = rtc.datetime()
     now_year, now_month, now_day, now_dow = now[0:4]
     now_hours, now_mins, now_secs = now[4:7]
-    
     day_name = DAYS[now_dow]
     
     date_str = "{} {:02d}/{:02d}/{:04d}".format(day_name, now_day, now_month, now_year)
@@ -115,10 +114,10 @@ while True:
     display.set_pen(0)
     display.clear()
 
-    p.decode(x_pos, 0, scale=IMG_SCALE)
+    png_decoder.decode(x_pos, 0, scale=IMG_SCALE)
     
-    if x_pos < 0:
-       p.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
+    if x_pos < IMG_WIDTH:
+       png_decoder.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
 
     render_text(time_str, (2, 1), scale=2, shadow=True)
     render_text(date_str, (2, 14), C_ORANGE, shadow=True)
