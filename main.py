@@ -12,6 +12,10 @@ from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64 as DISPLAY_IN
 
 SCROLL_SPEED = 1
 SCROLL_DELAY = 0.01
+
+TIME_POSITION = (2, 2)
+DATE_POSITION = (2, 16)
+
 IMG_WIDTH = 256
 IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
@@ -85,12 +89,14 @@ OUTLINE_SHADOW, OUTLINE_FULL = 1, 2
 def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, outline=None, outline_pen=C_BLACK):
     display.set_font(font)
     x, y = position
-    for ox in range(-1, 1):
-        for oy in range(-1, 1):
+    for ox in (-1, 0, 1):
+        for oy in (-1, 0, 1):
             if outline == OUTLINE_FULL or (outline == OUTLINE_SHADOW and ox == 1 and oy == 1):
-                display.set_pen(pen if ox == 0 and oy == 0 else outline_pen)
+                display.set_pen(outline_pen)
                 display.text(text, x + ox, y + oy, scale=scale)
-
+    display.set_pen(pen)
+    display.text(text, x, y, scale=scale)
+    
 # Init
 
 sync_time()
@@ -128,8 +134,8 @@ while True:
     if x_pos < IMG_WIDTH:
        png_decoder.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
 
-    render_text(time_str, (2, 1), scale=2, outline=OUTLINE_FULL)
-    render_text(date_str, (2, 14), C_ORANGE, outline=OUTLINE_FULL)
+    render_text(time_str, TIME_POSITION, scale=2, outline=OUTLINE_FULL)
+    render_text(date_str, DATE_POSITION, C_ORANGE, outline=OUTLINE_FULL)
 
     i75.update()
     time.sleep(SCROLL_DELAY)
