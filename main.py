@@ -14,6 +14,7 @@ SCROLL_SPEED = 1
 SCROLL_DELAY = 0.01
 
 TIME_POSITION = (2, 2)
+TIME_SHOW_SECONDS = False
 DATE_POSITION = (2, 16)
 
 IMG_WIDTH = 256
@@ -76,6 +77,7 @@ def sync_time():
             
 # Constants
 
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 IMAGES_PATH = "images"
 
@@ -118,9 +120,12 @@ while True:
     now_hours, now_mins, now_secs = now[4:7]
     day_name = DAYS[now_dow]
     
-    date_str = "{} {:02d}/{:02d}/{:04d}".format(day_name, now_day, now_month, now_year)
-    time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
-    
+    date_str = "{} {:02d} {} {:04d}".format(day_name, now_day, MONTHS[now_month], now_year)
+
+    if TIME_SHOW_SECONDS:
+        time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
+    else:
+        time_str = "{:02d}:{:02d}".format(now_hours, now_mins)
     if x_pos < -WIDTH:
         x_pos = 0
  
