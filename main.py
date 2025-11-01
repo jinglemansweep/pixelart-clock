@@ -16,6 +16,7 @@ rtc = machine.RTC()
 
 i75 = Interstate75(display=DISPLAY_INTERSTATE75, stb_invert=False, panel_type=Interstate75.PANEL_GENERIC)
 display = i75.display
+display.set_thickness(1)
 
 # NETWORK
 
@@ -68,13 +69,13 @@ C_ORANGE = display.create_pen(255, 117, 24)
 
 # UI Helpers
 
-def render_text(text, position, pen=C_WHITE, font="", shadow=False):
+def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, shadow=False):
     display.set_font(font)
     if shadow:
         display.set_pen(C_BLACK)
-        display.text(text, position[0] + 1, position[1] + 1)
+        display.text(text, position[0] + 1, position[1] + 1, scale=scale)
     display.set_pen(pen)
-    display.text(text, position[0], position[1])
+    display.text(text, position[0], position[1], scale=scale)
 
 # Variables
 
@@ -119,8 +120,8 @@ while True:
     if x_pos < 0:
        p.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
 
-    render_text(time_str, (2, 2), shadow=True)
-    render_text(date_str, (2, 16), C_ORANGE, shadow=True)
+    render_text(time_str, (2, 1), scale=2, shadow=True)
+    render_text(date_str, (2, 14), C_ORANGE, shadow=True)
 
     i75.update()
     time.sleep(SCROLL_DELAY)
