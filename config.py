@@ -13,18 +13,19 @@ SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
 # Manual Scene Configuration
-# Each scene is defined as a tuple: (scene_class_name, args, kwargs)
-# scene_class_name: "ScrollingImageScene", "StaticImageScene", etc.
+# Each scene is defined as a tuple: (scene_class_name, args, kwargs, schedule)
+# scene_class_name: "ScrollingImageScene", "StaticImageScene", "CubeScene", etc.
 # args: positional arguments (e.g., image_path)
 # kwargs: keyword arguments (e.g., scroll_speed=2)
+# schedule: optional dict with "hour_start" and "hour_end" (0-23)
+#   - hour_start=21, hour_end=9 means 9pm to 9am (cross-midnight)
+#   - omit schedule for always-active scenes
 
 SCENES = [
-    # Example scene configurations:
-    ("CubeScene", (), {"num_cubes": 3}),
+    ("CubeScene", (), {"num_cubes": 3}, {"hour_start": 12, "hour_end": 18}),
     ("ScrollingImageScene", ("images/bg1.png",), {"scroll_speed": 1}),
     ("ScrollingImageScene", ("images/bg2.png",), {"scroll_speed": 1}),
     ("ScrollingImageScene", ("images/bg3.png",), {"scroll_speed": 1}),
-    # Add more scenes here...
 ]
 
 # Fallback behavior when SCENES is empty or images don't exist

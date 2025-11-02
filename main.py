@@ -77,7 +77,7 @@ png_decoder = pngdec.PNG(display)
 
 # Initialize HUD and Scene Manager
 hud = HUD(display, rtc)
-scene_manager = create_scene_manager_from_config(display, png_decoder)
+scene_manager = create_scene_manager_from_config(display, png_decoder, rtc)
 
 # Main Loop
 

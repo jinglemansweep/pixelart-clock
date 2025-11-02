@@ -51,6 +51,7 @@ The application uses a modular scene-based architecture that separates scene ren
 - `SCENE_DURATION`: How long each scene runs (default: 60 seconds)
 - `SCENE_SELECTION`: Scene transition mode ("sequential" or "random")
 - Display constants: scroll speed, image dimensions, positions, colors
+- **Scene Scheduling**: Time-based scene activation with `hour_start` and `hour_end`
 
 #### Scene System (`scenes.py`)
 - **Base Scene Class**: Interface with `update()`, `render()`, and `cleanup()` methods
@@ -129,6 +130,53 @@ The application includes error handling for:
 - NTP synchronization failures
 
 WiFi connection failures are handled gracefully - the clock will continue to run with the internal RTC time even if network sync fails.
+
+## Scene Scheduling
+
+The application supports time-based scene scheduling, allowing different scenes to be active at different hours of the day.
+
+### Configuration Format
+
+Scenes can include an optional 4th scheduling element:
+```python
+SCENES = [
+    # Format: (scene_class, args, kwargs, schedule)
+    ("CubeScene", (), {"num_cubes": 1}, {"hour_start": 21, "hour_end": 9}),     # 9pm-9am
+    ("StaticImageScene", ("images/work.png",), {}, {"hour_start": 9, "hour_end": 17}), # 9am-5pm
+    ("ScrollingImageScene", ("images/bg.png",), {}),  # No schedule = always active
+]
+```
+
+### Scheduling Rules
+
+- **Hour Format**: Use 24-hour format (0-23)
+- **Cross-Midnight**: `hour_start=21, hour_end=9` means 9pm to 9am next day
+- **Unscheduled Scenes**: Omit schedule dict for always-active scenes
+- **Fallback Behavior**: If no scheduled scenes are active, uses unscheduled scenes
+- **Immediate Switching**: Scenes switch immediately when entering/leaving their time window
+
+### Example Use Cases
+
+```python
+# Night mode (calm, minimal)
+("StaticImageScene", ("images/night.png",), {}, {"hour_start": 22, "hour_end": 8}),
+
+# Work hours (focus-friendly)
+("StaticImageScene", ("images/minimal.png",), {}, {"hour_start": 9, "hour_end": 17}),
+
+# Evening relaxation
+("ScrollingImageScene", ("images/sunset.png",), {"scroll_speed": 0.5}, {"hour_start": 17, "hour_end": 22}),
+
+# Always available fallback
+("ScrollingImageScene", ("images/default.png",), {}),
+```
+
+### Time Utilities (`time_utils.py`)
+
+- `get_current_hour(rtc)`: Extract current hour from RTC
+- `is_time_in_range(hour, start, end)`: Check if hour is within range (handles cross-midnight)
+- `is_scene_scheduled(schedule, hour)`: Check if scene should be active
+- `validate_schedule(schedule)`: Validate schedule configuration
 
 ## Extending with New Scenes
 
