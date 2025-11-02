@@ -9,7 +9,7 @@ from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64 as DISPLAY_IN
 # Import new modular components
 import config
 from hud import HUD
-from scene_manager import create_default_scene_manager
+from scene_manager import create_scene_manager_from_config
 
 # HARDWARE
 
@@ -77,7 +77,7 @@ png_decoder = pngdec.PNG(display)
 
 # Initialize HUD and Scene Manager
 hud = HUD(display, rtc)
-scene_manager = create_default_scene_manager(display, png_decoder)
+scene_manager = create_scene_manager_from_config(display, png_decoder)
 
 # Main Loop
 
