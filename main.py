@@ -12,6 +12,14 @@ from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64 as DISPLAY_IN
 
 SCROLL_SPEED = 1
 SCROLL_DELAY = 0.01
+
+TIME_POSITION = (2, 2)
+TIME_SHOW_SECONDS = False
+
+DATE_POSITION = (2, 16)
+DATE_SHOW_DAY = True
+DATE_SHORT_MONTH = True
+
 IMG_WIDTH = 256
 IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
@@ -40,11 +48,11 @@ except ValueError as e:
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
-def network_connect(SSID, PSK):
+def network_connect(ssid, psk):
     max_wait = 5
     print("WiFi connecting...")
     wlan.config(pm=0xa11140) # Turn WiFi power saving off for some slow APs
-    wlan.connect(SSID, PSK)
+    wlan.connect(ssid, psk)
 
     while max_wait > 0:
         if wlan.status() < 0 or wlan.status() >= 3:
@@ -72,22 +80,28 @@ def sync_time():
             
 # Constants
 
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+IMAGES_PATH = "images"
+
 C_BLACK = display.create_pen(0, 0, 0)
 C_WHITE = display.create_pen(255, 255, 255)
 C_ORANGE = display.create_pen(255, 117, 24)
-IMAGES_PATH = "images"
+OUTLINE_SHADOW, OUTLINE_FULL = 1, 2
 
 # UI Helpers
 
-def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, shadow=False):
+def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, outline=None, outline_pen=C_BLACK):
     display.set_font(font)
-    if shadow:
-        display.set_pen(C_BLACK)
-        display.text(text, position[0] + 1, position[1] + 1, scale=scale)
+    x, y = position
+    for ox in (-1, 0, 1):
+        for oy in (-1, 0, 1):
+            if outline == OUTLINE_FULL or (outline == OUTLINE_SHADOW and ox == 1 and oy == 1):
+                display.set_pen(outline_pen)
+                display.text(text, x + ox, y + oy, scale=scale)
     display.set_pen(pen)
-    display.text(text, position[0], position[1], scale=scale)
-
+    display.text(text, x, y, scale=scale)
+    
 # Init
 
 sync_time()
@@ -109,9 +123,18 @@ while True:
     now_hours, now_mins, now_secs = now[4:7]
     day_name = DAYS[now_dow]
     
-    date_str = "{} {:02d}/{:02d}/{:04d}".format(day_name, now_day, now_month, now_year)
-    time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
-    
+    month_name = MONTHS[now_month]
+    if DATE_SHORT_MONTH:
+        month_name = month_name[:3]
+    if DATE_SHOW_DAY:
+        date_str = "{} {:02d} {} {:04d}".format(day_name, now_day, month_name, now_year)
+    else:
+        date_str = "{:02d} {} {:04d}".format(now_day, month_name, now_year)
+
+    if TIME_SHOW_SECONDS:
+        time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
+    else:
+        time_str = "{:02d}:{:02d}".format(now_hours, now_mins)
     if x_pos < -WIDTH:
         x_pos = 0
  
@@ -125,8 +148,8 @@ while True:
     if x_pos < IMG_WIDTH:
        png_decoder.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
 
-    render_text(time_str, (2, 1), scale=2, shadow=True)
-    render_text(date_str, (2, 14), C_ORANGE, shadow=True)
+    render_text(time_str, TIME_POSITION, scale=2, outline=OUTLINE_FULL)
+    render_text(date_str, DATE_POSITION, C_ORANGE, outline=OUTLINE_FULL)
 
     i75.update()
     time.sleep(SCROLL_DELAY)
