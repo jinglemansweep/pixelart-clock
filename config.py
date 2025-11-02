@@ -8,7 +8,7 @@ IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
 
 # Scene Configuration
-SCENE_DURATION = 60 # seconds - how long each scene runs
+SCENE_DURATION = 30 # seconds - how long each scene runs
 SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
@@ -20,10 +20,10 @@ IMAGES_PATH = "images"
 
 SCENES = [
     # Example scene configurations:
-    ("ScrollingImageScene", ("images/bg1.png",), {}),
-    ("ScrollingImageScene", ("images/bg2.png",), {"scroll_speed": 2}),
-    ("StaticImageScene", ("images/bg3.png",), {}),
-    ("ScrollingImageScene", ("images/bg1.png",), {"scroll_speed": 0.5}),
+    ("CubeScene", (), {"num_cubes": 3}),
+    ("ScrollingImageScene", ("images/bg1.png",), {"scroll_speed": 1}),
+    ("ScrollingImageScene", ("images/bg2.png",), {"scroll_speed": 1}),
+    ("ScrollingImageScene", ("images/bg3.png",), {"scroll_speed": 1}),
     # Add more scenes here...
 ]
 
