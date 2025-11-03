@@ -1,6 +1,7 @@
 """
 Time utilities for display mode scheduling
 """
+import os
 
 def get_current_hour(rtc):
     """Get the current hour (0-23) from RTC"""
@@ -79,3 +80,46 @@ def is_scene_active_in_mode(scene_preference, mode):
 
     # Unknown preference, default to active
     return True
+
+def resolve_image_path_for_mode(image_path, mode):
+    """
+    Resolve image path based on display mode, checking for night mode variants.
+
+    If mode is "dark", checks if an image with "_night" suffix exists
+    (e.g., "image_night.png" for "image.png"). If it exists, returns the night
+    variant path. Otherwise, returns the original path.
+
+    Args:
+        image_path (str): Original image path (e.g., "images/bg1.png")
+        mode (str): Current display mode ("normal", "dark", or "off")
+
+    Returns:
+        str: Resolved image path (night variant if available in dark mode, otherwise original)
+
+    Examples:
+        >>> resolve_image_path_for_mode("images/bg1.png", "dark")
+        "images/bg1_night.png"  # if file exists
+        >>> resolve_image_path_for_mode("images/bg1.png", "normal")
+        "images/bg1.png"
+    """
+    # Only check for night variant in dark mode
+    if mode != "dark" or not image_path:
+        return image_path
+
+    # Split path into base and extension
+    if '.' in image_path:
+        base_path, ext = image_path.rsplit('.', 1)
+        night_variant_path = f"{base_path}_night.{ext}"
+    else:
+        # No extension (unlikely for image files, but handle it)
+        night_variant_path = f"{image_path}_night"
+
+    # Check if night variant exists
+    try:
+        # Try to stat the file to see if it exists
+        os.stat(night_variant_path)
+        print(f"Using night variant: {night_variant_path}")
+        return night_variant_path
+    except OSError:
+        # Night variant doesn't exist, use original
+        return image_path

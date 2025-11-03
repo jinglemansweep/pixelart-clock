@@ -3,6 +3,7 @@ import time
 import math
 from random import choice, randint, randrange
 import config
+import time_utils
 
 class Scene:
     """Base class for all scenes"""
@@ -26,23 +27,27 @@ class Scene:
 
 class ScrollingImageScene(Scene):
     """Scene that displays a scrolling background image"""
-    
-    def __init__(self, display, png_decoder, image_path=None, scroll_speed=None):
+
+    def __init__(self, display, png_decoder, image_path=None, scroll_speed=None, display_mode=None):
         super().__init__(display, png_decoder)
-        
+
         # Use provided image or select random one
         if image_path is None:
             image_filename = choice(os.listdir(config.IMAGES_PATH))
             self.image_path = f"{config.IMAGES_PATH}/{image_filename}"
         else:
             self.image_path = image_path
-            
+
+        # Resolve mode-specific image variant (e.g., _night.png for dark mode)
+        mode = display_mode if display_mode is not None else "normal"
+        self.resolved_image_path = time_utils.resolve_image_path_for_mode(self.image_path, mode)
+
         self.scroll_speed = scroll_speed if scroll_speed is not None else config.SCROLL_SPEED
         self.x_pos = 0.0  # Initialize as float to handle fractional scroll speeds
-        
-        # Load the image
-        self.png_decoder.open_file(self.image_path)
-        print(f"ScrollingImageScene loaded: {self.image_path}")
+
+        # Load the resolved image (night variant if available in dark mode)
+        self.png_decoder.open_file(self.resolved_image_path)
+        print(f"ScrollingImageScene loaded: {self.resolved_image_path}")
     
     def update(self, delta_time):
         """Update scrolling position"""
@@ -77,25 +82,29 @@ class ScrollingImageScene(Scene):
     
     def cleanup(self):
         """Clean up resources"""
-        print(f"ScrollingImageScene cleanup: {self.image_path}")
+        print(f"ScrollingImageScene cleanup: {self.resolved_image_path}")
         # PNG decoder will be reused by next scene, no explicit cleanup needed
 
 class StaticImageScene(Scene):
     """Scene that displays a static background image"""
-    
-    def __init__(self, display, png_decoder, image_path=None):
+
+    def __init__(self, display, png_decoder, image_path=None, display_mode=None):
         super().__init__(display, png_decoder)
-        
+
         # Use provided image or select random one
         if image_path is None:
             image_filename = choice(os.listdir(config.IMAGES_PATH))
             self.image_path = f"{config.IMAGES_PATH}/{image_filename}"
         else:
             self.image_path = image_path
-        
-        # Load the image
-        self.png_decoder.open_file(self.image_path)
-        print(f"StaticImageScene loaded: {self.image_path}")
+
+        # Resolve mode-specific image variant (e.g., _night.png for dark mode)
+        mode = display_mode if display_mode is not None else "normal"
+        self.resolved_image_path = time_utils.resolve_image_path_for_mode(self.image_path, mode)
+
+        # Load the resolved image (night variant if available in dark mode)
+        self.png_decoder.open_file(self.resolved_image_path)
+        print(f"StaticImageScene loaded: {self.resolved_image_path}")
     
     def update(self, delta_time):
         """No updates needed for static image"""
@@ -107,7 +116,7 @@ class StaticImageScene(Scene):
     
     def cleanup(self):
         """Clean up resources"""
-        print(f"StaticImageScene cleanup: {self.image_path}")
+        print(f"StaticImageScene cleanup: {self.resolved_image_path}")
         # PNG decoder will be reused by next scene, no explicit cleanup needed
 
 class Cube:
@@ -199,12 +208,13 @@ class Cube:
 
 class CubeScene(Scene):
     """3D rotating cubes scene"""
-    
-    def __init__(self, display, png_decoder, num_cubes=3):
+
+    def __init__(self, display, png_decoder, num_cubes=3, display_mode=None):
         super().__init__(display, png_decoder)
         self.num_cubes = num_cubes
         self.cubes = []
         self.color_time = 0.0
+        self.display_mode = display_mode if display_mode is not None else "normal"
         
         # Initialize cubes with different parameters
         for i in range(num_cubes):
@@ -252,15 +262,19 @@ class CubeScene(Scene):
         r = int(128 + 127 * math.sin(self.color_time))
         g = int(128 + 127 * math.sin(self.color_time + 2.094))  # 120 degrees
         b = int(128 + 127 * math.sin(self.color_time + 4.188))  # 240 degrees
-        
+
         # Ensure RGB values are in valid range
         r = max(0, min(255, r))
         g = max(0, min(255, g))
         b = max(0, min(255, b))
-        
+
+        # Dim colors in dark mode
+        if self.display_mode == "dark":
+            r, g, b = config.dim_color(r, g, b)
+
         cube_pen = self.display.create_pen(r, g, b)
         self.display.set_pen(cube_pen)
-        
+
         # Draw all cubes
         for cube in self.cubes:
             cube.draw(self.display)

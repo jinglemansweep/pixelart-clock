@@ -21,13 +21,13 @@ IMAGES_PATH = "images"
 #   - 6pm-12:59am: dark
 MODE_SCHEDULE = {
     9: "normal",   # 9am: switch to normal mode
-    17: "dark",    # 6pm: switch to dark mode
-    23: "off"       # 1am: turn display off
+    18: "dark",    # 6pm: switch to dark mode
+    21: "off"       # 9pm: turn display off
 }
 
-# Mode brightness multipliers (0.0-1.0)
-NORMAL_MODE_BRIGHTNESS = 0.2  # Daytime brightness (adjust to preference)
-DARK_MODE_BRIGHTNESS = 0.1    # Nighttime brightness
+# Night mode color dimming factor (0.0-1.0)
+# Applied to HUD and vector scene colors in dark mode
+NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness
 
 # Manual Scene Configuration
 # Each scene is defined as a tuple: (scene_class_name, args, kwargs, time_preference)
@@ -73,3 +73,18 @@ def init_colors(display):
     C_BLACK = display.create_pen(0, 0, 0)
     C_WHITE = display.create_pen(255, 255, 255)
     C_ORANGE = display.create_pen(255, 117, 24)
+
+def dim_color(r, g, b, factor=None):
+    """
+    Dim RGB color values by a factor for night mode display.
+
+    Args:
+        r, g, b: RGB color values (0-255)
+        factor: Dimming factor (0.0-1.0), defaults to NIGHT_MODE_DIM_FACTOR
+
+    Returns:
+        tuple: Dimmed (r, g, b) values
+    """
+    if factor is None:
+        factor = NIGHT_MODE_DIM_FACTOR
+    return (int(r * factor), int(g * factor), int(b * factor))

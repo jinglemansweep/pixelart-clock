@@ -53,6 +53,8 @@ The application uses a modular scene-based architecture that separates scene ren
 - Display constants: scroll speed, image dimensions, positions, colors
 - **Display Modes**: Global display mode scheduling (Normal/Dark/Off) by hour
 - **Scene Preferences**: Scenes specify day/night preference for mode filtering
+- **Night Mode Dimming**: `NIGHT_MODE_DIM_FACTOR` controls color dimming (default: 0.3)
+- **Color Utilities**: `dim_color(r, g, b, factor)` dims RGB values for night mode
 
 #### Scene System (`scenes.py`)
 - **Base Scene Class**: Interface with `update()`, `render()`, and `cleanup()` methods
@@ -139,8 +141,8 @@ The application supports global display mode scheduling with scene filtering bas
 ### Display Modes
 
 Three display modes are available:
-- **Normal**: Full brightness, shows "day" scenes
-- **Dark**: Reduced brightness, shows "night" scenes
+- **Normal**: Day mode, shows "day" scenes
+- **Dark**: Night mode, shows "night" scenes and night image variants
 - **Off**: Display turned off, no scenes active
 
 ### Mode Scheduling Configuration
@@ -155,16 +157,12 @@ MODE_SCHEDULE = {
     18: "dark",    # 6pm: switch to dark mode
     1: "off"       # 1am: turn display off
 }
-
-# Mode brightness multipliers (0.0-1.0)
-NORMAL_MODE_BRIGHTNESS = 0.8  # Daytime brightness
-DARK_MODE_BRIGHTNESS = 0.3    # Nighttime brightness
 ```
 
 **How it works:**
 - At 1am: Display turns off (mode: "off")
 - At 9am: Display turns on in normal mode (mode: "normal")
-- At 6pm: Display switches to dark mode with reduced brightness (mode: "dark")
+- At 6pm: Display switches to dark mode (mode: "dark")
 - Mode persists until the next scheduled change
 
 ### Scene Configuration Format
@@ -191,20 +189,70 @@ SCENES = [
 ### Mode Behavior
 
 **Normal Mode:**
-- Configurable brightness (controlled by `NORMAL_MODE_BRIGHTNESS`, default 0.8/80%)
 - Shows scenes with preference "day" or None
+- Uses standard image files
 - HUD displays normally
 
 **Dark Mode:**
-- Reduced brightness (controlled by `DARK_MODE_BRIGHTNESS`, default 0.3/30%)
 - Shows scenes with preference "night" or None
-- HUD displays normally
+- Automatically uses "_night.png" image variants when available (falls back to standard images)
+- HUD colors are dimmed (configurable via `NIGHT_MODE_DIM_FACTOR`)
+- Vector scene colors are dimmed (e.g., CubeScene)
 
 **Off Mode:**
 - Display cleared to black
 - No scene updates (saves CPU/power)
 - No HUD rendering
 - Loop continues to check for mode transitions
+
+### Night Mode Dimming
+
+**Hardware Note:** The Interstate 75W does not support hardware brightness control. To achieve darker visuals in night mode, the application uses two complementary approaches:
+
+#### 1. Night Image Variants (for image-based scenes)
+
+**How it works:**
+- When in dark mode, image scenes automatically look for images with a "_night" suffix
+- If `images/bg1_night.png` exists, it will be used instead of `images/bg1.png` in dark mode
+- If no night variant exists, the original image is used
+- This allows you to create dimmed or color-adjusted versions of images for nighttime viewing
+
+**Creating night variants:**
+```bash
+# Create a dimmed version using ImageMagick (30% brightness)
+convert images/bg1.png -modulate 30 images/bg1_night.png
+
+# Create with slight desaturation for a more natural night look
+convert images/bg1.png -modulate 40,80,100 images/bg1_night.png
+```
+
+**Example image organization:**
+```
+images/
+  bg1.png         # Day version (used in normal mode)
+  bg1_night.png   # Night version (used in dark mode)
+  bg2.png         # Used in both modes (no night variant)
+  stars.png       # Night-only scene
+```
+
+#### 2. Color Dimming (for HUD and vector scenes)
+
+**How it works:**
+- The HUD (time/date display) automatically dims its colors in dark mode
+- Vector scenes (like CubeScene) dim their generated colors in dark mode
+- Dimming is controlled by `NIGHT_MODE_DIM_FACTOR` config setting (default: 0.3 = 30% brightness)
+
+**Configuration:**
+```python
+# In config.py
+NIGHT_MODE_DIM_FACTOR = 0.3  # Range: 0.0-1.0 (0.3 = 30% brightness)
+```
+
+**Implementation:**
+- The `dim_color(r, g, b, factor)` utility function multiplies RGB values by the dim factor
+- HUD creates dimmed versions of white and orange text colors in dark mode
+- Vector scenes apply dimming to their dynamically generated colors
+- This ensures all visual elements (images, text, graphics) are dimmer at night
 
 ### Example Use Cases
 
@@ -227,6 +275,7 @@ SCENES = [
 - `get_current_hour(rtc)`: Extract current hour (0-23) from RTC
 - `get_current_mode(rtc, mode_schedule)`: Determine current display mode from hour and schedule
 - `is_scene_active_in_mode(scene_preference, mode)`: Check if scene should be active in given mode
+- `resolve_image_path_for_mode(image_path, mode)`: Resolve image path to night variant if in dark mode
 
 ### Mode Transitions
 
@@ -241,18 +290,22 @@ To add new scene types:
 1. **Create Scene Class**: Inherit from `Scene` base class in `scenes.py`
    ```python
    class CustomScene(Scene):
-       def __init__(self, display, png_decoder, *args):
+       def __init__(self, display, png_decoder, *args, display_mode=None):
            super().__init__(display, png_decoder)
+           self.display_mode = display_mode if display_mode is not None else "normal"
            # Custom initialization
-       
+
        def update(self, delta_time):
            # Update scene state/animation
            pass
-       
+
        def render(self):
            # Render scene content
+           # For vector/generated graphics, dim colors in dark mode:
+           # if self.display_mode == "dark":
+           #     r, g, b = config.dim_color(r, g, b)
            pass
-       
+
        def cleanup(self):
            # Clean up resources
            pass
@@ -271,3 +324,7 @@ To add new scene types:
 - Implement proper cleanup to avoid memory leaks
 - Test scene transitions to ensure smooth operation
 - Consider frame timing - aim for consistent 60fps performance
+- **Night Mode Support**:
+  - For image scenes: create "_night.png" variants of your images
+  - For vector/generated graphics: use `config.dim_color()` to dim RGB values in dark mode
+  - Accept `display_mode` parameter in `__init__()` to enable mode-aware rendering
