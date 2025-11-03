@@ -8,6 +8,7 @@ from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64 as DISPLAY_IN
 
 # Import new modular components
 import config
+import time_utils
 from hud import HUD
 from scene_manager import create_scene_manager_from_config
 
@@ -85,18 +86,47 @@ print("Main loop starting...")
 print(f"Scene duration: {config.SCENE_DURATION} seconds")
 print(f"Scene selection: {config.SCENE_SELECTION}")
 
+# Track display mode for brightness control
+current_display_mode = None
+
 while True:
+    # Get current display mode
+    display_mode = time_utils.get_current_mode(rtc, config.MODE_SCHEDULE)
+
+    # Check if mode changed
+    if display_mode != current_display_mode:
+        current_display_mode = display_mode
+        print(f"Display mode: {display_mode}")
+
+        # Apply brightness for dark mode
+        # Note: Interstate75/PicoGraphics may not support brightness control
+        # If available, use display.set_backlight() or i75.set_brightness()
+        if hasattr(i75, 'set_brightness'):
+            if display_mode == "dark":
+                i75.set_brightness(config.DARK_MODE_BRIGHTNESS)
+            elif display_mode == "normal":
+                i75.set_brightness(1.0)
+
+    # Skip rendering in off mode
+    if display_mode == "off":
+        # Clear display to black
+        display.set_pen(0)
+        display.clear()
+        i75.update()
+        time.sleep(config.SCROLL_DELAY)
+        continue
+
     # Clear display
     display.set_pen(0)
     display.clear()
-    
+
     # Update and render current scene
     scene_manager.update(config.SCROLL_DELAY)
     scene_manager.render()
-    
+
     # Render HUD overlay
     hud.render()
-    
+
     # Update display and sleep
     i75.update()
     time.sleep(config.SCROLL_DELAY)

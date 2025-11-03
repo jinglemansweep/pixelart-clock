@@ -1,5 +1,5 @@
 """
-Time utilities for scene scheduling
+Time utilities for display mode scheduling
 """
 
 def get_current_hour(rtc):
@@ -7,103 +7,75 @@ def get_current_hour(rtc):
     now = rtc.datetime()
     return now[4]  # Hour is at index 4 in datetime tuple
 
-def is_time_in_range(current_hour, hour_start, hour_end):
+def get_current_mode(rtc, mode_schedule):
     """
-    Check if current hour is within the specified range.
-    Handles cross-midnight ranges (e.g., 21-9 means 9pm to 9am next day).
-    
-    Args:
-        current_hour (int): Current hour (0-23)
-        hour_start (int): Start hour (0-23)
-        hour_end (int): End hour (0-23)
-    
-    Returns:
-        bool: True if current hour is in range
-    """
-    if hour_start <= hour_end:
-        # Same day range (e.g., 9-17 means 9am to 5pm)
-        return hour_start <= current_hour < hour_end
-    else:
-        # Cross-midnight range (e.g., 21-9 means 9pm to 9am next day)
-        return current_hour >= hour_start or current_hour < hour_end
+    Get the current display mode based on the hour and mode schedule.
 
-def is_scene_scheduled(schedule, current_hour):
-    """
-    Check if a scene should be active based on its schedule and current time.
-    
+    The mode_schedule is a dict mapping hour (0-23) to mode ("normal", "dark", "off").
+    Only specify hours where mode changes; the mode persists until the next change.
+
+    Example: {9: "normal", 18: "dark", 1: "off"} means:
+        - 1am-8:59am: off
+        - 9am-5:59pm: normal
+        - 6pm-12:59am: dark
+
     Args:
-        schedule (dict or None): Schedule configuration with 'hour_start' and 'hour_end' keys
-        current_hour (int): Current hour (0-23)
-    
+        rtc: RTC object to get current time from
+        mode_schedule (dict): Dict mapping hour (int) to mode (str)
+
     Returns:
-        bool: True if scene should be active
+        str: Current mode ("normal", "dark", or "off")
     """
-    # No schedule means always active
-    if not schedule:
+    if not mode_schedule:
+        return "normal"  # Default to normal if no schedule
+
+    current_hour = get_current_hour(rtc)
+
+    # Sort schedule hours to find the most recent mode change
+    sorted_hours = sorted(mode_schedule.keys())
+
+    # Find the most recent hour that has passed
+    current_mode = None
+    for hour in sorted_hours:
+        if current_hour >= hour:
+            current_mode = mode_schedule[hour]
+        else:
+            break
+
+    # If no mode found (current hour is before first scheduled hour),
+    # wrap around and use the last scheduled mode from previous day
+    if current_mode is None:
+        current_mode = mode_schedule[sorted_hours[-1]]
+
+    return current_mode
+
+def is_scene_active_in_mode(scene_preference, mode):
+    """
+    Check if a scene should be active in the given display mode.
+
+    Args:
+        scene_preference (str or None): Scene time preference
+            - "day": active only in normal mode
+            - "night": active only in dark mode
+            - None: active in both normal and dark modes
+        mode (str): Current display mode ("normal", "dark", or "off")
+
+    Returns:
+        bool: True if scene should be active in this mode
+    """
+    # In off mode, no scenes are active
+    if mode == "off":
+        return False
+
+    # No preference means active in all non-off modes
+    if scene_preference is None:
         return True
-    
-    # Extract schedule parameters with defaults
-    hour_start = schedule.get("hour_start", 0)
-    hour_end = schedule.get("hour_end", 23)
-    
-    # Validate hour ranges
-    if not (0 <= hour_start <= 23) or not (0 <= hour_end <= 23):
-        print(f"Warning: Invalid schedule hours: start={hour_start}, end={hour_end}")
-        return True  # Default to active if invalid schedule
-    
-    return is_time_in_range(current_hour, hour_start, hour_end)
 
-def validate_schedule(schedule):
-    """
-    Validate a schedule configuration.
-    
-    Args:
-        schedule (dict or None): Schedule to validate
-    
-    Returns:
-        tuple: (is_valid, error_message)
-    """
-    if not schedule:
-        return True, None
-    
-    if not isinstance(schedule, dict):
-        return False, "Schedule must be a dictionary"
-    
-    hour_start = schedule.get("hour_start")
-    hour_end = schedule.get("hour_end")
-    
-    if hour_start is None or hour_end is None:
-        return False, "Schedule must have both 'hour_start' and 'hour_end'"
-    
-    if not isinstance(hour_start, int) or not isinstance(hour_end, int):
-        return False, "Schedule hours must be integers"
-    
-    if not (0 <= hour_start <= 23) or not (0 <= hour_end <= 23):
-        return False, "Schedule hours must be between 0 and 23"
-    
-    return True, None
+    # Check scene preference against mode
+    if scene_preference == "day":
+        return mode == "normal"
+    elif scene_preference == "night":
+        return mode == "dark"
 
-def format_schedule_description(schedule):
-    """
-    Format a human-readable description of a schedule.
-    
-    Args:
-        schedule (dict or None): Schedule to describe
-    
-    Returns:
-        str: Human-readable schedule description
-    """
-    if not schedule:
-        return "Always active"
-    
-    hour_start = schedule.get("hour_start", 0)
-    hour_end = schedule.get("hour_end", 23)
-    
-    # Format hours as HH:00
-    start_str = f"{hour_start:02d}:00"
-    end_str = f"{hour_end:02d}:00"
-    
-    if hour_start <= hour_end:
-        return f"Active {start_str}-{end_str}"
-    else:
-        return f"Active {start_str}-{end_str} (next day)"
+    # Unknown preference, default to active
+    return True

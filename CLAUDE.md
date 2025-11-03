@@ -51,7 +51,8 @@ The application uses a modular scene-based architecture that separates scene ren
 - `SCENE_DURATION`: How long each scene runs (default: 60 seconds)
 - `SCENE_SELECTION`: Scene transition mode ("sequential" or "random")
 - Display constants: scroll speed, image dimensions, positions, colors
-- **Scene Scheduling**: Time-based scene activation with `hour_start` and `hour_end`
+- **Display Modes**: Global display mode scheduling (Normal/Dark/Off) by hour
+- **Scene Preferences**: Scenes specify day/night preference for mode filtering
 
 #### Scene System (`scenes.py`)
 - **Base Scene Class**: Interface with `update()`, `render()`, and `cleanup()` methods
@@ -131,52 +132,106 @@ The application includes error handling for:
 
 WiFi connection failures are handled gracefully - the clock will continue to run with the internal RTC time even if network sync fails.
 
-## Scene Scheduling
+## Display Modes and Scene Scheduling
 
-The application supports time-based scene scheduling, allowing different scenes to be active at different hours of the day.
+The application supports global display mode scheduling with scene filtering based on day/night preferences.
 
-### Configuration Format
+### Display Modes
 
-Scenes can include an optional 4th scheduling element:
+Three display modes are available:
+- **Normal**: Full brightness, shows "day" scenes
+- **Dark**: Reduced brightness, shows "night" scenes
+- **Off**: Display turned off, no scenes active
+
+### Mode Scheduling Configuration
+
+Configure display modes by hour in `config.py`:
+
+```python
+# MODE_SCHEDULE maps hour (0-23) to mode ("normal", "dark", "off")
+# Only specify hours where mode changes - mode persists until next change
+MODE_SCHEDULE = {
+    9: "normal",   # 9am: switch to normal mode
+    18: "dark",    # 6pm: switch to dark mode
+    1: "off"       # 1am: turn display off
+}
+
+# Dark mode brightness multiplier (0.0-1.0)
+DARK_MODE_BRIGHTNESS = 0.3
+```
+
+**How it works:**
+- At 1am: Display turns off (mode: "off")
+- At 9am: Display turns on in normal mode (mode: "normal")
+- At 6pm: Display switches to dark mode with reduced brightness (mode: "dark")
+- Mode persists until the next scheduled change
+
+### Scene Configuration Format
+
+Scenes can include an optional 4th element specifying time preference:
+
 ```python
 SCENES = [
-    # Format: (scene_class, args, kwargs, schedule)
-    ("CubeScene", (), {"num_cubes": 1}, {"hour_start": 21, "hour_end": 9}),     # 9pm-9am
-    ("StaticImageScene", ("images/work.png",), {}, {"hour_start": 9, "hour_end": 17}), # 9am-5pm
-    ("ScrollingImageScene", ("images/bg.png",), {}),  # No schedule = always active
+    # Format: (scene_class, args, kwargs, preference)
+    ("CubeScene", (), {"num_cubes": 3}, "night"),  # Only in dark mode
+    ("ScrollingImageScene", ("images/bg1.png",), {"scroll_speed": 1}, None),  # Both modes
+    ("ScrollingImageScene", ("images/bg2.png",), {"scroll_speed": 1}),  # Both modes (4th element omitted)
+    ("ScrollingImageScene", ("images/bg3.png",), {"scroll_speed": 1}, "day"),  # Only in normal mode
 ]
 ```
 
-### Scheduling Rules
+### Scene Time Preferences
 
-- **Hour Format**: Use 24-hour format (0-23)
-- **Cross-Midnight**: `hour_start=21, hour_end=9` means 9pm to 9am next day
-- **Unscheduled Scenes**: Omit schedule dict for always-active scenes
-- **Fallback Behavior**: If no scheduled scenes are active, uses unscheduled scenes
-- **Immediate Switching**: Scenes switch immediately when entering/leaving their time window
+- **"day"**: Scene active only in **normal** mode
+- **"night"**: Scene active only in **dark** mode
+- **None** (or omit 4th element): Scene active in **both normal and dark** modes
+- In **off** mode, no scenes are active regardless of preference
+
+### Mode Behavior
+
+**Normal Mode:**
+- Full brightness (if hardware supports brightness control)
+- Shows scenes with preference "day" or None
+- HUD displays normally
+
+**Dark Mode:**
+- Reduced brightness (controlled by `DARK_MODE_BRIGHTNESS`)
+- Shows scenes with preference "night" or None
+- HUD displays normally (potentially dimmed)
+
+**Off Mode:**
+- Display cleared to black
+- No scene updates (saves CPU/power)
+- No HUD rendering
+- Loop continues to check for mode transitions
 
 ### Example Use Cases
 
 ```python
-# Night mode (calm, minimal)
-("StaticImageScene", ("images/night.png",), {}, {"hour_start": 22, "hour_end": 8}),
+# Morning/daytime scenes (9am-6pm in normal mode)
+("ScrollingImageScene", ("images/daytime.png",), {}, "day"),
+("StaticImageScene", ("images/work.png",), {}, "day"),
 
-# Work hours (focus-friendly)
-("StaticImageScene", ("images/minimal.png",), {}, {"hour_start": 9, "hour_end": 17}),
+# Evening/night scenes (6pm-1am in dark mode)
+("CubeScene", (), {"num_cubes": 3, "speed": 0.5}, "night"),
+("ScrollingImageScene", ("images/stars.png",), {"scroll_speed": 0.3}, "night"),
 
-# Evening relaxation
-("ScrollingImageScene", ("images/sunset.png",), {"scroll_speed": 0.5}, {"hour_start": 17, "hour_end": 22}),
-
-# Always available fallback
-("ScrollingImageScene", ("images/default.png",), {}),
+# Always available (shown in both normal and dark modes)
+("ScrollingImageScene", ("images/clouds.png",), {}),
+("StaticImageScene", ("images/abstract.png",), {}, None),
 ```
 
 ### Time Utilities (`time_utils.py`)
 
-- `get_current_hour(rtc)`: Extract current hour from RTC
-- `is_time_in_range(hour, start, end)`: Check if hour is within range (handles cross-midnight)
-- `is_scene_scheduled(schedule, hour)`: Check if scene should be active
-- `validate_schedule(schedule)`: Validate schedule configuration
+- `get_current_hour(rtc)`: Extract current hour (0-23) from RTC
+- `get_current_mode(rtc, mode_schedule)`: Determine current display mode from hour and schedule
+- `is_scene_active_in_mode(scene_preference, mode)`: Check if scene should be active in given mode
+
+### Mode Transitions
+
+- **Immediate Switching**: When mode changes, scenes are re-evaluated immediately
+- **Scene Filtering**: Only scenes matching the current mode are available for rotation
+- **Automatic Updates**: Scene manager detects mode changes and switches scenes if needed
 
 ## Extending with New Scenes
 

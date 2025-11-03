@@ -6,40 +6,41 @@ import time_utils
 
 class SceneManager:
     """Manages scene transitions and timing"""
-    
+
     def __init__(self, display, png_decoder, rtc, scene_classes=None):
         self.display = display
         self.png_decoder = png_decoder
         self.rtc = rtc
-        self.scene_classes = scene_classes or []  # List of (scene_class, args, kwargs, schedule)
-        
+        self.scene_classes = scene_classes or []  # List of (scene_class, args, kwargs, preference)
+
         self.current_scene = None
         self.current_scene_index = 0
         self.scene_start_time = time.time()
         self.scene_duration = config.SCENE_DURATION
-        self.last_schedule_check_hour = None  # Track when we last checked schedules
-        
-        # Initialize first scene if scene classes are provided
-        if self.scene_classes:
-            self.switch_to_scene(0)
+
+        # Initialize current mode based on RTC and schedule
+        self.current_mode = time_utils.get_current_mode(self.rtc, config.MODE_SCHEDULE)
+
+        # Note: First scene initialization is deferred to after all scenes are added
+        # to ensure mode-aware scene selection
     
-    def add_scene_class(self, scene_class, schedule=None, *args, **kwargs):
-        """Add a scene class with its constructor arguments and optional schedule"""
-        self.scene_classes.append((scene_class, args, kwargs, schedule))
+    def add_scene_class(self, scene_class, preference=None, *args, **kwargs):
+        """Add a scene class with its constructor arguments and optional time preference"""
+        self.scene_classes.append((scene_class, args, kwargs, preference))
     
     def create_scene(self, scene_index):
         """Create a scene instance from scene class and arguments"""
         if scene_index < 0 or scene_index >= len(self.scene_classes):
             return None
-            
+
         scene_data = self.scene_classes[scene_index]
         if len(scene_data) == 4:
-            scene_class, args, kwargs, schedule = scene_data
+            scene_class, args, kwargs, preference = scene_data
         else:
             # Backward compatibility
             scene_class, args, kwargs = scene_data
-            schedule = None
-            
+            preference = None
+
         return scene_class(self.display, self.png_decoder, *args, **kwargs)
     
     def switch_to_scene(self, scene_index):
@@ -76,40 +77,33 @@ class SceneManager:
         self.switch_to_scene(next_index)
     
     def get_active_scene_indices(self):
-        """Get indices of scenes that should be active for the current time"""
-        current_hour = time_utils.get_current_hour(self.rtc)
+        """Get indices of scenes that should be active for the current display mode"""
+        mode = time_utils.get_current_mode(self.rtc, config.MODE_SCHEDULE)
         active_indices = []
-        unscheduled_indices = []
-        
+
         for i, scene_data in enumerate(self.scene_classes):
-            # Extract schedule from scene data
+            # Extract preference from scene data
             if len(scene_data) == 4:
-                scene_class, args, kwargs, schedule = scene_data
+                scene_class, args, kwargs, preference = scene_data
             else:
                 scene_class, args, kwargs = scene_data
-                schedule = None
-            
-            if time_utils.is_scene_scheduled(schedule, current_hour):
+                preference = None
+
+            if time_utils.is_scene_active_in_mode(preference, mode):
                 active_indices.append(i)
-            elif schedule is None:
-                # Unscheduled scenes are fallback options
-                unscheduled_indices.append(i)
-        
-        # Return active scenes, or fallback to unscheduled scenes if none active
-        if active_indices:
-            return active_indices
-        elif unscheduled_indices:
-            print(f"No scheduled scenes active at hour {current_hour}, using unscheduled scenes")
-            return unscheduled_indices
-        else:
-            print(f"No scenes available at hour {current_hour}, using all scenes")
-            return list(range(len(self.scene_classes)))
+
+        # If no scenes are active (e.g., in off mode or no matching preferences),
+        # return empty list
+        if not active_indices:
+            print(f"No scenes available for mode '{mode}'")
+
+        return active_indices
     
-    def should_check_schedules(self):
-        """Check if we need to re-evaluate scene schedules (hour changed)"""
-        current_hour = time_utils.get_current_hour(self.rtc)
-        if self.last_schedule_check_hour != current_hour:
-            self.last_schedule_check_hour = current_hour
+    def should_check_mode(self):
+        """Check if we need to re-evaluate display mode (mode changed)"""
+        mode = time_utils.get_current_mode(self.rtc, config.MODE_SCHEDULE)
+        if self.current_mode != mode:
+            self.current_mode = mode
             return True
         return False
     
@@ -144,21 +138,25 @@ class SceneManager:
     
     def update(self, delta_time):
         """Update scene manager and current scene"""
-        # Check if schedules need re-evaluation (hour changed)
-        if self.should_check_schedules():
+        # Check if display mode needs re-evaluation (mode changed)
+        if self.should_check_mode():
             active_indices = self.get_active_scene_indices()
-            current_hour = time_utils.get_current_hour(self.rtc)
-            print(f"Hour changed to {current_hour}, active scenes: {active_indices}")
-            
+            mode = self.current_mode
+            print(f"Display mode changed to '{mode}', active scenes: {active_indices}")
+
             # If current scene is no longer active, switch immediately
-            if self.current_scene_index not in active_indices:
+            if active_indices and self.current_scene_index not in active_indices:
                 print(f"Current scene {self.current_scene_index} no longer active, switching...")
                 self.switch_to_next_scene_scheduled()
-        
+
+        # Skip scene updates in off mode
+        if self.current_mode == "off":
+            return
+
         # Check if it's time to switch scenes (normal timing)
         if time.time() - self.scene_start_time >= self.scene_duration:
             self.switch_to_next_scene_scheduled()
-        
+
         # Update current scene
         if self.current_scene:
             self.current_scene.update(delta_time)
@@ -198,43 +196,37 @@ def create_scene_manager_from_config(display, png_decoder, rtc):
     # Use manual scene configuration if provided
     if config.SCENES:
         print(f"Loading {len(config.SCENES)} manually configured scenes...")
-        
+
         for scene_config in config.SCENES:
             if len(scene_config) == 4:
-                scene_class_name, args, kwargs, schedule = scene_config
+                scene_class_name, args, kwargs, preference = scene_config
             elif len(scene_config) == 3:
                 scene_class_name, args, kwargs = scene_config
-                schedule = None
+                preference = None
             elif len(scene_config) == 2:
                 scene_class_name, args = scene_config
                 kwargs = {}
-                schedule = None
+                preference = None
             else:
                 print(f"Invalid scene configuration: {scene_config}")
                 continue
-            
-            # Validate schedule if provided
-            if schedule:
-                is_valid, error_msg = time_utils.validate_schedule(schedule)
-                if not is_valid:
-                    print(f"Invalid schedule for {scene_class_name}: {error_msg}")
-                    schedule = None  # Ignore invalid schedule
-            
+
             # Get the scene class
             if scene_class_name not in scene_classes:
                 print(f"Unknown scene class: {scene_class_name}")
                 continue
-            
+
             scene_class = scene_classes[scene_class_name]
-            
+
             # Add the scene to manager
-            scene_manager.add_scene_class(scene_class, schedule, *args, **kwargs)
-            schedule_desc = time_utils.format_schedule_description(schedule) if schedule else "Always active"
-            print(f"Added scene: {scene_class_name} ({schedule_desc}) with args={args}, kwargs={kwargs}")
-        
+            scene_manager.add_scene_class(scene_class, preference, *args, **kwargs)
+            pref_desc = f"preference: {preference}" if preference else "all modes"
+            print(f"Added scene: {scene_class_name} ({pref_desc}) with args={args}, kwargs={kwargs}")
+
         # Initialize the first scene after adding all scenes
+        # Use mode-aware scene selection to ensure we start with a valid scene
         if scene_manager.scene_classes and not scene_manager.current_scene:
-            scene_manager.switch_to_scene(0)
+            scene_manager.switch_to_next_scene_scheduled()
     
     # Fallback to auto-generated scenes if no manual config or USE_AUTO_SCENES is True
     elif config.USE_AUTO_SCENES:
@@ -267,7 +259,11 @@ def _create_auto_scenes(display, png_decoder, rtc, scene_classes):
     except OSError:
         print("Images directory not found, using default scrolling scene")
         scene_manager.add_scene_class(ScrollingImageScene)
-    
+
+    # Initialize the first scene (auto-generated scenes have no time preference)
+    if scene_manager.scene_classes and not scene_manager.current_scene:
+        scene_manager.switch_to_next_scene_scheduled()
+
     return scene_manager
 
 # Keep the old function name for backwards compatibility
