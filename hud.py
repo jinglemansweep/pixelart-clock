@@ -1,8 +1,9 @@
 import config
+import time_utils
 
 class HUD:
     """Heads-Up Display for overlaying time, date, and other information on scenes"""
-    
+
     def __init__(self, display, rtc):
         self.display = display
         self.rtc = rtc
@@ -46,11 +47,26 @@ class HUD:
     def render(self):
         """Render all HUD elements"""
         time_str, date_str = self.format_time_date()
-        
+
+        # Get current display mode to determine if we should dim colors
+        current_mode = time_utils.get_current_mode(self.rtc, config.MODE_SCHEDULE)
+
+        # Use dimmed colors in dark mode
+        if current_mode == "dark":
+            # Create dimmed white and orange colors
+            white_r, white_g, white_b = config.dim_color(255, 255, 255)
+            orange_r, orange_g, orange_b = config.dim_color(255, 117, 24)
+            white_pen = self.display.create_pen(white_r, white_g, white_b)
+            orange_pen = self.display.create_pen(orange_r, orange_g, orange_b)
+        else:
+            # Use normal colors
+            white_pen = config.C_WHITE
+            orange_pen = config.C_ORANGE
+
         # Render time with configured text effects
-        self.render_text(time_str, config.TIME_POSITION, scale=config.TIME_SCALE, 
+        self.render_text(time_str, config.TIME_POSITION, pen=white_pen, scale=config.TIME_SCALE,
                         outline=config.USE_TEXT_OUTLINE, shadow=config.USE_TEXT_SHADOW)
-        
-        # Render date with configured text effects  
-        self.render_text(date_str, config.DATE_POSITION, config.C_ORANGE, scale=config.DATE_SCALE,
+
+        # Render date with configured text effects
+        self.render_text(date_str, config.DATE_POSITION, pen=orange_pen, scale=config.DATE_SCALE,
                         outline=config.USE_TEXT_OUTLINE, shadow=config.USE_TEXT_SHADOW)

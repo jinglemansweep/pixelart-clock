@@ -41,7 +41,11 @@ class SceneManager:
             scene_class, args, kwargs = scene_data
             preference = None
 
-        return scene_class(self.display, self.png_decoder, *args, **kwargs)
+        # Pass current display mode to scene (for mode-aware image loading)
+        kwargs_with_mode = kwargs.copy()
+        kwargs_with_mode['display_mode'] = self.current_mode
+
+        return scene_class(self.display, self.png_decoder, *args, **kwargs_with_mode)
     
     def switch_to_scene(self, scene_index):
         """Switch to a specific scene by index"""
