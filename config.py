@@ -8,7 +8,7 @@ IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
 
 # Scene Configuration
-SCENE_DURATION = 60 # seconds - how long each scene runs
+SCENE_DURATION = 10 # seconds - how long each scene runs
 SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
