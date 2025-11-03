@@ -61,7 +61,10 @@ The application uses a modular scene-based architecture that separates scene ren
 - **Base Scene Class**: Interface with `update()`, `render()`, and `cleanup()` methods
 - **ScrollingImageScene**: Horizontally scrolling background images
 - **StaticImageScene**: Static background image display
+- **CubeScene**: 3D rotating wireframe cubes with color cycling
+- **TetrisScene**: Automated Tetris simulation with falling pieces and line clearing
 - Memory-efficient design using shared PNG decoder
+- Vector scenes support day/night color dimming
 
 #### HUD System (`hud.py`)
 - **HUD Class**: Renders time, date, and future overlay information
@@ -257,6 +260,53 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # Range: 0.0-1.0 (0.3 = 30% brightness)
 - Vector scenes apply dimming to their dynamically generated colors
 - This ensures all visual elements (images, text, graphics) are dimmer at night
 
+## Built-in Scenes
+
+The application includes several built-in scene types for different visual effects.
+
+### Image-Based Scenes
+
+**ScrollingImageScene:**
+- Horizontally scrolling background images
+- Configurable scroll speed
+- Supports night mode image variants (`_night.png` suffix)
+- Example: `("ScrollingImageScene", ("images/bg.png",), {"scroll_speed": 1})`
+
+**StaticImageScene:**
+- Static background image display
+- Supports night mode image variants (`_night.png` suffix)
+- Example: `("StaticImageScene", ("images/bg.png",), {})`
+
+### Vector Scenes
+
+**CubeScene:**
+- 3D rotating wireframe cubes
+- Color cycling animation
+- Configurable number of cubes
+- Automatically dims colors in dark mode
+- Example: `("CubeScene", (), {"num_cubes": 3}, "night")`
+
+**TetrisScene:**
+- Automated Tetris simulation
+- Falling pieces with random colors and rotations
+- Random horizontal movement and rotation while falling
+- No line clearing - blocks continuously stack up
+- Grid resets after configurable interval (default: 60 seconds)
+- Automatically dims colors in dark mode
+- Configurable fall speed (default: 0.01 seconds per row)
+- Configurable reset interval (default: 60 seconds)
+- Example: `("TetrisScene", (), {"fall_speed": 0.01, "reset_interval": 60.0}, "night")`
+
+**Features:**
+- 7 classic Tetris shapes (I, O, T, S, Z, J, L)
+- Random piece colors, spawn positions, and initial rotations
+- 30% chance of horizontal movement per step (left or right)
+- 20% chance of rotation per step
+- Continuous piece spawning - never stops
+- Configurable grid dimensions (default: 64 wide × 16 tall visible)
+- Block size automatically scaled to fit display
+- Periodic grid reset to keep scene dynamic
+
 ## Date and Time Formatting
 
 The HUD supports flexible, customizable date and time formats using token-based format strings.
@@ -330,7 +380,8 @@ DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
 ("StaticImageScene", ("images/work.png",), {}, "day"),
 
 # Evening/night scenes (6pm-1am in dark mode)
-("CubeScene", (), {"num_cubes": 3, "speed": 0.5}, "night"),
+("CubeScene", (), {"num_cubes": 3}, "night"),
+("TetrisScene", (), {"fall_speed": 0.01, "reset_interval": 60.0}, "night"),
 ("ScrollingImageScene", ("images/stars.png",), {"scroll_speed": 0.3}, "night"),
 
 # Always available (shown in both normal and dark modes)
