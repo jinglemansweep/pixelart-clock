@@ -1,28 +1,15 @@
 import machine
 import network
-import os
 import ntptime
 import pngdec
 import time
 
-from random import choice
 from interstate75 import Interstate75, DISPLAY_INTERSTATE75_256X64 as DISPLAY_INTERSTATE75
 
-# CONFIG
-
-SCROLL_SPEED = 1
-SCROLL_DELAY = 0.01
-
-TIME_POSITION = (2, 2)
-TIME_SHOW_SECONDS = False
-
-DATE_POSITION = (2, 16)
-DATE_SHOW_DAY = True
-DATE_SHORT_MONTH = True
-
-IMG_WIDTH = 256
-IMG_HEIGHT = 64
-IMG_SCALE = (1, 1)
+# Import new modular components
+import config
+from hud import HUD
+from scene_manager import create_scene_manager_from_config
 
 # HARDWARE
 
@@ -31,6 +18,9 @@ display = i75.display
 display.set_thickness(1)
 WIDTH, HEIGHT = display.get_bounds()
 rtc = machine.RTC()
+
+# Initialize display colors
+config.init_colors(display)
 
 # NETWORK
 
@@ -48,11 +38,11 @@ except ValueError as e:
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
-def network_connect(ssid, psk):
+def network_connect(SSID, PSK):
     max_wait = 5
     print("WiFi connecting...")
     wlan.config(pm=0xa11140) # Turn WiFi power saving off for some slow APs
-    wlan.connect(ssid, psk)
+    wlan.connect(SSID, PSK)
 
     while max_wait > 0:
         if wlan.status() < 0 or wlan.status() >= 3:
@@ -78,79 +68,36 @@ def sync_time():
         except OSError:
             print("NTP sync failed")
             
-# Constants
+# Initialize modular components
 
-MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-IMAGES_PATH = "images"
-
-C_BLACK = display.create_pen(0, 0, 0)
-C_WHITE = display.create_pen(255, 255, 255)
-C_ORANGE = display.create_pen(255, 117, 24)
-OUTLINE_SHADOW, OUTLINE_FULL = 1, 2
-
-# UI Helpers
-
-def render_text(text, position, pen=C_WHITE, font="bitmap6", scale=1, outline=None, outline_pen=C_BLACK):
-    display.set_font(font)
-    x, y = position
-    for ox in (-1, 0, 1):
-        for oy in (-1, 0, 1):
-            if outline == OUTLINE_FULL or (outline == OUTLINE_SHADOW and ox == 1 and oy == 1):
-                display.set_pen(outline_pen)
-                display.text(text, x + ox, y + oy, scale=scale)
-    display.set_pen(pen)
-    display.text(text, x, y, scale=scale)
-    
 # Init
 
 sync_time()
 png_decoder = pngdec.PNG(display)
-image_filename = choice(os.listdir(IMAGES_PATH))
-image_path = f"{IMAGES_PATH}/{image_filename}"
-png_decoder.open_file(image_path)
+
+# Initialize HUD and Scene Manager
+hud = HUD(display, rtc)
+scene_manager = create_scene_manager_from_config(display, png_decoder, rtc)
 
 # Main Loop
 
 print("Main loop starting...")
-
-x_pos = 0
+print(f"Scene duration: {config.SCENE_DURATION} seconds")
+print(f"Scene selection: {config.SCENE_SELECTION}")
 
 while True:
-    
-    now = rtc.datetime()
-    now_year, now_month, now_day, now_dow = now[0:4]
-    now_hours, now_mins, now_secs = now[4:7]
-    day_name = DAYS[now_dow]
-    
-    month_name = MONTHS[now_month]
-    if DATE_SHORT_MONTH:
-        month_name = month_name[:3]
-    if DATE_SHOW_DAY:
-        date_str = "{} {:02d} {} {:04d}".format(day_name, now_day, month_name, now_year)
-    else:
-        date_str = "{:02d} {} {:04d}".format(now_day, month_name, now_year)
-
-    if TIME_SHOW_SECONDS:
-        time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
-    else:
-        time_str = "{:02d}:{:02d}".format(now_hours, now_mins)
-    if x_pos < -WIDTH:
-        x_pos = 0
- 
-    x_pos -= SCROLL_SPEED
-    
+    # Clear display
     display.set_pen(0)
     display.clear()
-
-    png_decoder.decode(x_pos, 0, scale=IMG_SCALE)
     
-    if x_pos < IMG_WIDTH:
-       png_decoder.decode(x_pos + IMG_WIDTH, 0, scale=IMG_SCALE)
-
-    render_text(time_str, TIME_POSITION, scale=2, outline=OUTLINE_FULL)
-    render_text(date_str, DATE_POSITION, C_ORANGE, outline=OUTLINE_FULL)
-
+    # Update and render current scene
+    scene_manager.update(config.SCROLL_DELAY)
+    scene_manager.render()
+    
+    # Render HUD overlay
+    hud.render()
+    
+    # Update display and sleep
     i75.update()
-    time.sleep(SCROLL_DELAY)
+    time.sleep(config.SCROLL_DELAY)
 
