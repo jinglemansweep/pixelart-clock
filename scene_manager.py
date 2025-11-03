@@ -185,13 +185,14 @@ class SceneManager:
 
 def create_scene_manager_from_config(display, png_decoder, rtc):
     """Create a scene manager using manual scene configuration from config.py"""
-    from scenes import ScrollingImageScene, StaticImageScene, CubeScene
-    
+    from scenes import ScrollingImageScene, StaticImageScene, CubeScene, TetrisScene
+
     # Map scene class names to actual classes
     scene_classes = {
         "ScrollingImageScene": ScrollingImageScene,
         "StaticImageScene": StaticImageScene,
         "CubeScene": CubeScene,
+        "TetrisScene": TetrisScene,
         # Add new scene types here as they're created
     }
     

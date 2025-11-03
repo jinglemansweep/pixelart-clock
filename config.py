@@ -8,7 +8,7 @@ IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
 
 # Scene Configuration
-SCENE_DURATION = 10 # seconds - how long each scene runs
+SCENE_DURATION = 20 # seconds - how long each scene runs
 SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
@@ -41,6 +41,7 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness
 
 SCENES = [
     ("CubeScene", (), {"num_cubes": 3}),
+    ("TetrisScene", (), {}),
     ("StaticImageScene", ("images/spectrum_dizzy.png",), {}),
     ("ScrollingImageScene", ("images/spectrum_jetpac.png",), {}),
     ("StaticImageScene", ("images/spectrum_jet_set_willy.png",), {}),
