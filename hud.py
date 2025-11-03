@@ -33,15 +33,9 @@ class HUD:
         self.display.text(text, x, y, scale=scale)
     
     def format_time_date(self):
-        """Format current time and date strings"""
-        now = self.rtc.datetime()
-        now_year, now_month, now_day, now_dow = now[0:4]
-        now_hours, now_mins, now_secs = now[4:7]
-        day_name = config.DAYS[now_dow]
-        
-        date_str = "{} {:02d}/{:02d}/{:04d}".format(day_name, now_day, now_month, now_year)
-        time_str = "{:02d}:{:02d}:{:02d}".format(now_hours, now_mins, now_secs)
-        
+        """Format current time and date strings using configured formats"""
+        time_str = time_utils.format_time(self.rtc, config.TIME_FORMAT)
+        date_str = time_utils.format_date(self.rtc, config.DATE_FORMAT)
         return time_str, date_str
     
     def render(self):

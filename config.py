@@ -21,8 +21,8 @@ IMAGES_PATH = "images"
 #   - 6pm-12:59am: dark
 MODE_SCHEDULE = {
     9: "normal",   # 9am: switch to normal mode
-    18: "dark",    # 6pm: switch to dark mode
-    21: "off"       # 9pm: turn display off
+    19: "dark",    # 6pm: switch to dark mode
+    20: "off"       # 9pm: turn display off
 }
 
 # Night mode color dimming factor (0.0-1.0)
@@ -64,8 +64,20 @@ C_BLACK = None  # Will be set from display.create_pen(0, 0, 0)
 C_WHITE = None  # Will be set from display.create_pen(255, 255, 255)  
 C_ORANGE = None  # Will be set from display.create_pen(255, 117, 24)
 
-# Day Names
-DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+# Date/Time Format Configuration
+TIME_FORMAT = "HH:MM"  # Examples: "HH:MM:SS", "HH:MM", "hh:MM AP"
+DATE_FORMAT = "DDD DD/MM/YYYY"  # Examples: "DDD DD/MM/YYYY", "DDDD, MMMM D, YYYY", "DD-MMM-YY"
+
+# Day Names (short and long)
+DAYS_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+DAYS_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+# Month Names (short and long)
+MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+# Backwards compatibility
+DAYS = DAYS_SHORT
 
 def init_colors(display):
     """Initialize color pens from display object"""
