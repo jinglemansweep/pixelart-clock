@@ -8,7 +8,7 @@ IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
 
 # Scene Configuration
-SCENE_DURATION = 30 # seconds - how long each scene runs
+SCENE_DURATION = 10 # seconds - how long each scene runs
 SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
@@ -21,8 +21,8 @@ IMAGES_PATH = "images"
 #   - 6pm-12:59am: dark
 MODE_SCHEDULE = {
     9: "normal",   # 9am: switch to normal mode
-    19: "dark",    # 6pm: switch to dark mode
-    20: "off"       # 9pm: turn display off
+    21: "dark",    # 6pm: switch to dark mode
+    23: "off"       # 9pm: turn display off
 }
 
 # Night mode color dimming factor (0.0-1.0)
@@ -40,19 +40,26 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness
 #   - None: shows in both normal and dark modes (omit 4th element or set to None)
 
 SCENES = [
-    ("CubeScene", (), {"num_cubes": 3}, "night"),  # Cube scene only at night (dark mode)
-    ("ScrollingImageScene", ("images/bg1.png",), {"scroll_speed": 1}),  # Always available
-    ("ScrollingImageScene", ("images/bg2.png",), {"scroll_speed": 1}),  # Always available
-    ("ScrollingImageScene", ("images/bg3.png",), {"scroll_speed": 1}, "day"),  # Day scene only (normal mode)
+    ("CubeScene", (), {"num_cubes": 3}),
+    ("StaticImageScene", ("images/spectrum_dizzy.png",), {}),
+    ("ScrollingImageScene", ("images/spectrum_jetpac.png",), {}),
+    ("StaticImageScene", ("images/spectrum_jet_set_willy.png",), {}),
+    ("ScrollingImageScene", ("images/spectrum_sabre_wolf.png",), {}),
+    ("ScrollingImageScene", ("images/scene_purple_sunset.png",), {}),
+    ("ScrollingImageScene", ("images/scene_neon_city.png",), {}),
+    ("ScrollingImageScene", ("images/scene_future_family.png",), {}),
+    # ("StaticImageScene", ("images/xmas_snow_animals.png",), {}),
+    # ("StaticImageScene", ("images/xmas_snow_bridge.png",), {}),
+    # ("ScrollingImageScene", ("images/xmas_fireplace.png",), {}),
 ]
 
 # Fallback behavior when SCENES is empty or images don't exist
 USE_AUTO_SCENES = True  # If True, automatically create scenes from images/ directory when SCENES is empty
 
 # HUD Configuration
-TIME_POSITION = (2, 1)
+TIME_POSITION = (3, 1)
 TIME_SCALE = 2
-DATE_POSITION = (2, 14)
+DATE_POSITION = (3, 15)
 DATE_SCALE = 1
 
 # Text Rendering Options
