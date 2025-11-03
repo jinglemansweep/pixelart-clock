@@ -25,8 +25,9 @@ MODE_SCHEDULE = {
     23: "off"       # 1am: turn display off
 }
 
-# Dark mode brightness multiplier (0.0-1.0)
-DARK_MODE_BRIGHTNESS = 0.3
+# Mode brightness multipliers (0.0-1.0)
+NORMAL_MODE_BRIGHTNESS = 0.2  # Daytime brightness (adjust to preference)
+DARK_MODE_BRIGHTNESS = 0.1    # Nighttime brightness
 
 # Manual Scene Configuration
 # Each scene is defined as a tuple: (scene_class_name, args, kwargs, time_preference)

@@ -156,8 +156,9 @@ MODE_SCHEDULE = {
     1: "off"       # 1am: turn display off
 }
 
-# Dark mode brightness multiplier (0.0-1.0)
-DARK_MODE_BRIGHTNESS = 0.3
+# Mode brightness multipliers (0.0-1.0)
+NORMAL_MODE_BRIGHTNESS = 0.8  # Daytime brightness
+DARK_MODE_BRIGHTNESS = 0.3    # Nighttime brightness
 ```
 
 **How it works:**
@@ -190,14 +191,14 @@ SCENES = [
 ### Mode Behavior
 
 **Normal Mode:**
-- Full brightness (if hardware supports brightness control)
+- Configurable brightness (controlled by `NORMAL_MODE_BRIGHTNESS`, default 0.8/80%)
 - Shows scenes with preference "day" or None
 - HUD displays normally
 
 **Dark Mode:**
-- Reduced brightness (controlled by `DARK_MODE_BRIGHTNESS`)
+- Reduced brightness (controlled by `DARK_MODE_BRIGHTNESS`, default 0.3/30%)
 - Shows scenes with preference "night" or None
-- HUD displays normally (potentially dimmed)
+- HUD displays normally
 
 **Off Mode:**
 - Display cleared to black

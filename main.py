@@ -98,14 +98,35 @@ while True:
         current_display_mode = display_mode
         print(f"Display mode: {display_mode}")
 
-        # Apply brightness for dark mode
-        # Note: Interstate75/PicoGraphics may not support brightness control
-        # If available, use display.set_backlight() or i75.set_brightness()
+        # Apply brightness based on mode
+        if display_mode == "dark":
+            brightness = config.DARK_MODE_BRIGHTNESS
+        elif display_mode == "normal":
+            brightness = config.NORMAL_MODE_BRIGHTNESS
+        else:
+            brightness = 0.0  # off mode
+
+        # Try different brightness control methods
+        # Interstate75/HUB75 displays may use different methods
+        brightness_set = False
         if hasattr(i75, 'set_brightness'):
-            if display_mode == "dark":
-                i75.set_brightness(config.DARK_MODE_BRIGHTNESS)
-            elif display_mode == "normal":
-                i75.set_brightness(1.0)
+            try:
+                i75.set_brightness(brightness)
+                brightness_set = True
+                print(f"Brightness set to {brightness:.1%} via i75.set_brightness()")
+            except:
+                pass
+
+        if not brightness_set and hasattr(display, 'set_backlight'):
+            try:
+                display.set_backlight(brightness)
+                brightness_set = True
+                print(f"Brightness set to {brightness:.1%} via display.set_backlight()")
+            except:
+                pass
+
+        if not brightness_set and display_mode != "off":
+            print(f"Warning: Brightness control not available (requested {brightness:.1%})")
 
     # Skip rendering in off mode
     if display_mode == "off":
