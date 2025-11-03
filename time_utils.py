@@ -1,5 +1,5 @@
 """
-Time utilities for display mode scheduling
+Time utilities for display mode scheduling and formatting
 """
 import os
 
@@ -123,3 +123,139 @@ def resolve_image_path_for_mode(image_path, mode):
     except OSError:
         # Night variant doesn't exist, use original
         return image_path
+
+def format_time(rtc, format_string):
+    """
+    Format time using a custom format string.
+
+    Supported tokens:
+        HH - 24-hour with leading zero (00-23)
+        H  - 24-hour without leading zero (0-23)
+        hh - 12-hour with leading zero (01-12)
+        h  - 12-hour without leading zero (1-12)
+        MM - Minutes with leading zero (00-59)
+        M  - Minutes without leading zero (0-59)
+        SS - Seconds with leading zero (00-59)
+        S  - Seconds without leading zero (0-59)
+        AP - AM/PM
+        A  - A/P
+
+    Args:
+        rtc: RTC object
+        format_string: Format string (e.g., "HH:MM:SS", "hh:MM AP")
+
+    Returns:
+        str: Formatted time string
+    """
+    now = rtc.datetime()
+    hour = now[4]
+    minute = now[5]
+    second = now[6]
+
+    # Calculate 12-hour format
+    hour_12 = hour % 12
+    if hour_12 == 0:
+        hour_12 = 12
+    am_pm = "AM" if hour < 12 else "PM"
+    a_p = "A" if hour < 12 else "P"
+
+    # Use placeholders to avoid conflicts during replacement
+    # Replace longer tokens first, using unique placeholders
+    replacements = [
+        ("HH", "\x01"),  # Placeholder for 24-hour with zero
+        ("hh", "\x02"),  # Placeholder for 12-hour with zero
+        ("MM", "\x03"),  # Placeholder for minutes with zero
+        ("SS", "\x04"),  # Placeholder for seconds with zero
+        ("AP", "\x05"),  # Placeholder for AM/PM
+        ("H", "\x06"),   # Placeholder for 24-hour no zero
+        ("h", "\x07"),   # Placeholder for 12-hour no zero
+        ("M", "\x08"),   # Placeholder for minutes no zero
+        ("S", "\x09"),   # Placeholder for seconds no zero
+        ("A", "\x0A"),   # Placeholder for A/P
+    ]
+
+    result = format_string
+
+    # First pass: replace tokens with placeholders
+    for token, placeholder in replacements:
+        result = result.replace(token, placeholder)
+
+    # Second pass: replace placeholders with actual values
+    result = result.replace("\x01", "{:02d}".format(hour))
+    result = result.replace("\x02", "{:02d}".format(hour_12))
+    result = result.replace("\x03", "{:02d}".format(minute))
+    result = result.replace("\x04", "{:02d}".format(second))
+    result = result.replace("\x05", am_pm)
+    result = result.replace("\x06", str(hour))
+    result = result.replace("\x07", str(hour_12))
+    result = result.replace("\x08", str(minute))
+    result = result.replace("\x09", str(second))
+    result = result.replace("\x0A", a_p)
+
+    return result
+
+def format_date(rtc, format_string):
+    """
+    Format date using a custom format string.
+
+    Supported tokens:
+        DDDD - Full day name (Monday)
+        DDD  - Short day name (Mon)
+        DD   - Day with leading zero (01-31)
+        D    - Day without leading zero (1-31)
+        MMMM - Full month name (January)
+        MMM  - Short month name (Jan)
+        MM   - Month number with leading zero (01-12)
+        M    - Month number without leading zero (1-12)
+        YYYY - 4-digit year (2024)
+        YY   - 2-digit year (24)
+
+    Args:
+        rtc: RTC object
+        format_string: Format string (e.g., "DDD DD/MM/YYYY", "DDDD, MMMM D, YYYY")
+
+    Returns:
+        str: Formatted date string
+    """
+    from config import DAYS_SHORT, DAYS_LONG, MONTHS_SHORT, MONTHS_LONG
+
+    now = rtc.datetime()
+    year = now[0]
+    month = now[1]
+    day = now[2]
+    dow = now[3]  # Day of week (0-6)
+
+    # Use placeholders to avoid conflicts during replacement
+    # Replace longer tokens first, using unique placeholders
+    replacements = [
+        ("DDDD", "\x01"),  # Placeholder for full day name
+        ("DDD", "\x02"),   # Placeholder for short day name
+        ("MMMM", "\x03"),  # Placeholder for full month name
+        ("MMM", "\x04"),   # Placeholder for short month name
+        ("YYYY", "\x05"),  # Placeholder for 4-digit year
+        ("YY", "\x06"),    # Placeholder for 2-digit year
+        ("DD", "\x07"),    # Placeholder for day with zero
+        ("D", "\x08"),     # Placeholder for day no zero
+        ("MM", "\x09"),    # Placeholder for month with zero
+        ("M", "\x0A"),     # Placeholder for month no zero
+    ]
+
+    result = format_string
+
+    # First pass: replace tokens with placeholders
+    for token, placeholder in replacements:
+        result = result.replace(token, placeholder)
+
+    # Second pass: replace placeholders with actual values
+    result = result.replace("\x01", DAYS_LONG[dow])
+    result = result.replace("\x02", DAYS_SHORT[dow])
+    result = result.replace("\x03", MONTHS_LONG[month - 1])  # month is 1-12
+    result = result.replace("\x04", MONTHS_SHORT[month - 1])
+    result = result.replace("\x05", str(year))
+    result = result.replace("\x06", "{:02d}".format(year % 100))
+    result = result.replace("\x07", "{:02d}".format(day))
+    result = result.replace("\x08", str(day))
+    result = result.replace("\x09", "{:02d}".format(month))
+    result = result.replace("\x0A", str(month))
+
+    return result

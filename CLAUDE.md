@@ -55,6 +55,7 @@ The application uses a modular scene-based architecture that separates scene ren
 - **Scene Preferences**: Scenes specify day/night preference for mode filtering
 - **Night Mode Dimming**: `NIGHT_MODE_DIM_FACTOR` controls color dimming (default: 0.3)
 - **Color Utilities**: `dim_color(r, g, b, factor)` dims RGB values for night mode
+- **Date/Time Formats**: `TIME_FORMAT` and `DATE_FORMAT` define custom display formats
 
 #### Scene System (`scenes.py`)
 - **Base Scene Class**: Interface with `update()`, `render()`, and `cleanup()` methods
@@ -66,6 +67,8 @@ The application uses a modular scene-based architecture that separates scene ren
 - **HUD Class**: Renders time, date, and future overlay information
 - Separated from scene logic for clean overlay rendering
 - Configurable positioning and styling with shadow effects
+- Supports custom date/time formats with flexible token-based formatting
+- Automatically dims colors in dark mode
 
 #### Scene Management (`scene_manager.py`)
 - **SceneManager Class**: Handles scene transitions and timing
@@ -254,6 +257,71 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # Range: 0.0-1.0 (0.3 = 30% brightness)
 - Vector scenes apply dimming to their dynamically generated colors
 - This ensures all visual elements (images, text, graphics) are dimmer at night
 
+## Date and Time Formatting
+
+The HUD supports flexible, customizable date and time formats using token-based format strings.
+
+### Configuration
+
+Configure formats in `config.py`:
+
+```python
+# Time format (default: "HH:MM:SS")
+TIME_FORMAT = "HH:MM:SS"  # 24-hour with seconds
+# TIME_FORMAT = "HH:MM"      # 24-hour without seconds
+# TIME_FORMAT = "hh:MM AP"   # 12-hour with AM/PM
+
+# Date format (default: "DDD DD/MM/YYYY")
+DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
+# DATE_FORMAT = "DDDD, MMMM D, YYYY"  # Long format
+# DATE_FORMAT = "DD-MMM-YY"           # Short format with month name
+```
+
+### Time Format Tokens
+
+| Token | Description | Example |
+|-------|-------------|---------|
+| `HH` | 24-hour with leading zero | 00-23 |
+| `H` | 24-hour without leading zero | 0-23 |
+| `hh` | 12-hour with leading zero | 01-12 |
+| `h` | 12-hour without leading zero | 1-12 |
+| `MM` | Minutes with leading zero | 00-59 |
+| `M` | Minutes without leading zero | 0-59 |
+| `SS` | Seconds with leading zero | 00-59 |
+| `S` | Seconds without leading zero | 0-59 |
+| `AP` | AM/PM indicator | AM, PM |
+| `A` | A/P indicator | A, P |
+
+### Date Format Tokens
+
+| Token | Description | Example |
+|-------|-------------|---------|
+| `DDDD` | Full day name | Monday |
+| `DDD` | Short day name | Mon |
+| `DD` | Day with leading zero | 01-31 |
+| `D` | Day without leading zero | 1-31 |
+| `MMMM` | Full month name | January |
+| `MMM` | Short month name | Jan |
+| `MM` | Month number with leading zero | 01-12 |
+| `M` | Month number without leading zero | 1-12 |
+| `YYYY` | 4-digit year | 2024 |
+| `YY` | 2-digit year | 24 |
+
+### Format Examples
+
+**Time formats:**
+- `"HH:MM:SS"` → `14:35:22`
+- `"HH:MM"` → `14:35`
+- `"hh:MM AP"` → `02:35 PM`
+- `"h:MM A"` → `2:35 P`
+
+**Date formats:**
+- `"DDD DD/MM/YYYY"` → `Mon 15/01/2024`
+- `"DDDD, MMMM D, YYYY"` → `Monday, January 15, 2024`
+- `"DD-MMM-YY"` → `15-Jan-24`
+- `"D MMM YYYY"` → `15 Jan 2024`
+- `"MM/DD/YYYY"` → `01/15/2024` (US format)
+
 ### Example Use Cases
 
 ```python
@@ -272,10 +340,15 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # Range: 0.0-1.0 (0.3 = 30% brightness)
 
 ### Time Utilities (`time_utils.py`)
 
+**Display mode functions:**
 - `get_current_hour(rtc)`: Extract current hour (0-23) from RTC
 - `get_current_mode(rtc, mode_schedule)`: Determine current display mode from hour and schedule
 - `is_scene_active_in_mode(scene_preference, mode)`: Check if scene should be active in given mode
 - `resolve_image_path_for_mode(image_path, mode)`: Resolve image path to night variant if in dark mode
+
+**Date/time formatting functions:**
+- `format_time(rtc, format_string)`: Format time using custom format string with tokens (HH, MM, SS, etc.)
+- `format_date(rtc, format_string)`: Format date using custom format string with tokens (DD, MMM, YYYY, etc.)
 
 ### Mode Transitions
 
