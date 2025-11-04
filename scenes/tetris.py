@@ -82,9 +82,9 @@ class TetrisScene(Scene):
     """Automated Tetris simulation scene with falling pieces and line clearing"""
 
     # Tetris grid dimensions
-    GRID_WIDTH = 64
-    GRID_HEIGHT = 16  # Visible height (4 rows hidden at top for spawning)
-    TOTAL_HEIGHT = 20  # Total including spawn area
+    GRID_WIDTH = 32  # Reduced from 64 for larger blocks
+    GRID_HEIGHT = 8   # Reduced from 16 for larger blocks (4 rows hidden at top for spawning)
+    TOTAL_HEIGHT = 12  # Total including spawn area (reduced from 20)
 
     def __init__(self, display, png_decoder, fall_speed=0.02, reset_interval=60.0, display_mode=None):
         super().__init__(display, png_decoder)
