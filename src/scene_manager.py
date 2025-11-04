@@ -114,11 +114,14 @@ class SceneManager:
     def switch_to_next_scene_scheduled(self):
         """Switch to next scene considering schedules"""
         active_indices = self.get_active_scene_indices()
-        
+
         if not active_indices:
             return
-        
-        if config.SCENE_SELECTION == "random":
+
+        # If this is first initialization (no current scene), start at first active scene
+        if self.current_scene is None:
+            next_index = active_indices[0]
+        elif config.SCENE_SELECTION == "random":
             # Random selection from active scenes
             if len(active_indices) > 1:
                 # Try to avoid current scene if possible
@@ -137,7 +140,7 @@ class SceneManager:
             except ValueError:
                 # Current scene not in active list, start from first active scene
                 next_index = active_indices[0]
-        
+
         self.switch_to_scene(next_index)
     
     def update(self, delta_time):
@@ -185,7 +188,7 @@ class SceneManager:
 
 def create_scene_manager_from_config(display, png_decoder, rtc):
     """Create a scene manager using manual scene configuration from config.py"""
-    from scenes import ScrollingImageScene, StaticImageScene, CubeScene, TetrisScene
+    from scenes import ScrollingImageScene, StaticImageScene, CubeScene, TetrisScene, AsteroidsScene
 
     # Map scene class names to actual classes
     scene_classes = {
@@ -193,6 +196,7 @@ def create_scene_manager_from_config(display, png_decoder, rtc):
         "StaticImageScene": StaticImageScene,
         "CubeScene": CubeScene,
         "TetrisScene": TetrisScene,
+        "AsteroidsScene": AsteroidsScene,
         # Add new scene types here as they're created
     }
     

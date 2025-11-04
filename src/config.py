@@ -8,7 +8,7 @@ IMG_HEIGHT = 64
 IMG_SCALE = (1, 1)
 
 # Scene Configuration
-SCENE_DURATION = 10 # seconds - how long each scene runs
+SCENE_DURATION = 30 # seconds - how long each scene runs
 SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
@@ -40,6 +40,7 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness
 #   - None: shows in both normal and night modes (omit 4th element or set to None)
 
 SCENES = [
+    ("AsteroidsScene", (), {"num_asteroids": 5}),
     ("CubeScene", (), {"num_cubes": 3}),
     ("TetrisScene", (), {}),
     ("StaticImageScene", ("images/spectrum_dizzy.png",), {}),
