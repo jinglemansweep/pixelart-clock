@@ -12,20 +12,20 @@ def get_current_mode(rtc, mode_schedule):
     """
     Get the current display mode based on the hour and mode schedule.
 
-    The mode_schedule is a dict mapping hour (0-23) to mode ("normal", "dark", "off").
+    The mode_schedule is a dict mapping hour (0-23) to mode ("normal", "night", "off").
     Only specify hours where mode changes; the mode persists until the next change.
 
-    Example: {9: "normal", 18: "dark", 1: "off"} means:
+    Example: {9: "normal", 18: "night", 1: "off"} means:
         - 1am-8:59am: off
         - 9am-5:59pm: normal
-        - 6pm-12:59am: dark
+        - 6pm-12:59am: night
 
     Args:
         rtc: RTC object to get current time from
         mode_schedule (dict): Dict mapping hour (int) to mode (str)
 
     Returns:
-        str: Current mode ("normal", "dark", or "off")
+        str: Current mode ("normal", "night", or "off")
     """
     if not mode_schedule:
         return "normal"  # Default to normal if no schedule
@@ -57,9 +57,9 @@ def is_scene_active_in_mode(scene_preference, mode):
     Args:
         scene_preference (str or None): Scene time preference
             - "day": active only in normal mode
-            - "night": active only in dark mode
-            - None: active in both normal and dark modes
-        mode (str): Current display mode ("normal", "dark", or "off")
+            - "night": active only in night mode
+            - None: active in both normal and night modes
+        mode (str): Current display mode ("normal", "night", or "off")
 
     Returns:
         bool: True if scene should be active in this mode
@@ -76,7 +76,7 @@ def is_scene_active_in_mode(scene_preference, mode):
     if scene_preference == "day":
         return mode == "normal"
     elif scene_preference == "night":
-        return mode == "dark"
+        return mode == "night"
 
     # Unknown preference, default to active
     return True
@@ -85,25 +85,25 @@ def resolve_image_path_for_mode(image_path, mode):
     """
     Resolve image path based on display mode, checking for night mode variants.
 
-    If mode is "dark", checks if an image with "_night" suffix exists
+    If mode is "night", checks if an image with "_night" suffix exists
     (e.g., "image_night.png" for "image.png"). If it exists, returns the night
     variant path. Otherwise, returns the original path.
 
     Args:
         image_path (str): Original image path (e.g., "images/bg1.png")
-        mode (str): Current display mode ("normal", "dark", or "off")
+        mode (str): Current display mode ("normal", "night", or "off")
 
     Returns:
-        str: Resolved image path (night variant if available in dark mode, otherwise original)
+        str: Resolved image path (night variant if available in night mode, otherwise original)
 
     Examples:
-        >>> resolve_image_path_for_mode("images/bg1.png", "dark")
+        >>> resolve_image_path_for_mode("images/bg1.png", "night")
         "images/bg1_night.png"  # if file exists
         >>> resolve_image_path_for_mode("images/bg1.png", "normal")
         "images/bg1.png"
     """
-    # Only check for night variant in dark mode
-    if mode != "dark" or not image_path:
+    # Only check for night variant in night mode
+    if mode != "night" or not image_path:
         return image_path
 
     # Split path into base and extension

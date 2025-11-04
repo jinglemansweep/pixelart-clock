@@ -68,7 +68,7 @@ The project includes several gorgeous pixel art scenes:
 - 🚀 **Sci-Fi**: Future family scenes with vibrant colors
 - 🎄 **Seasonal**: Christmas-themed scenes (snow animals, winter bridge, cozy fireplace)
 
-Each image includes a night variant that automatically activates in dark mode!
+Each image includes a night variant that automatically activates in night mode!
 
 ## 🛠️ Hardware Requirements
 
@@ -214,14 +214,14 @@ Configure when your display is active in `src/config.py`:
 ```python
 MODE_SCHEDULE = {
     9: "normal",   # 9am: Full brightness, show "day" scenes
-    21: "dark",    # 9pm: Dimmed mode, show "night" scenes
+    21: "night",   # 9pm: Dimmed mode, show "night" scenes
     23: "off"      # 11pm: Display off
 }
 ```
 
 **Modes:**
 - **normal**: Full brightness, shows scenes marked "day" or None
-- **dark**: Dimmed colors (30% by default), shows scenes marked "night" or None
+- **night**: Dimmed colors (30% by default), shows scenes marked "night" or None
 - **off**: Display turns off completely
 
 ### Scene Rotation
@@ -249,7 +249,7 @@ DATE_FORMAT = "DDD DD/MM/YYYY"     # "Mon 15/01/2024"
 
 ### Night Mode Brightness
 
-Adjust the dimming factor for dark mode:
+Adjust the dimming factor for night mode:
 
 ```python
 NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness (range: 0.0-1.0)
@@ -286,8 +286,8 @@ class MyCustomScene(Scene):
         """Draw to the display"""
         r, g, b = self.color
 
-        # Dim colors in dark mode
-        if self.display_mode == "dark":
+        # Dim colors in night mode
+        if self.display_mode == "night":
             r, g, b = config.dim_color(r, g, b)
 
         pen = self.display.create_pen(r, g, b)

@@ -80,7 +80,7 @@ The application uses a modular scene-based architecture that separates scene ren
 - `SCENE_DURATION`: How long each scene runs (default: 60 seconds)
 - `SCENE_SELECTION`: Scene transition mode ("sequential" or "random")
 - Display constants: scroll speed, image dimensions, positions, colors
-- **Display Modes**: Global display mode scheduling (Normal/Dark/Off) by hour
+- **Display Modes**: Global display mode scheduling (Normal/Night/Off) by hour
 - **Scene Preferences**: Scenes specify day/night preference for mode filtering
 - **Night Mode Dimming**: `NIGHT_MODE_DIM_FACTOR` controls color dimming (default: 0.3)
 - **Color Utilities**: `dim_color(r, g, b, factor)` dims RGB values for night mode
@@ -100,7 +100,7 @@ The application uses a modular scene-based architecture that separates scene ren
 - Separated from scene logic for clean overlay rendering
 - Configurable positioning and styling with shadow effects
 - Supports custom date/time formats with flexible token-based formatting
-- Automatically dims colors in dark mode
+- Automatically dims colors in night mode
 
 #### Scene Management (`src/scene_manager.py`)
 - **SceneManager Class**: Handles scene transitions and timing
@@ -178,7 +178,7 @@ The application supports global display mode scheduling with scene filtering bas
 
 Three display modes are available:
 - **Normal**: Day mode, shows "day" scenes
-- **Dark**: Night mode, shows "night" scenes and night image variants
+- **Night**: Night mode, shows "night" scenes and night image variants
 - **Off**: Display turned off, no scenes active
 
 ### Mode Scheduling Configuration
@@ -186,11 +186,11 @@ Three display modes are available:
 Configure display modes by hour in `src/config.py`:
 
 ```python
-# MODE_SCHEDULE maps hour (0-23) to mode ("normal", "dark", "off")
+# MODE_SCHEDULE maps hour (0-23) to mode ("normal", "night", "off")
 # Only specify hours where mode changes - mode persists until next change
 MODE_SCHEDULE = {
     9: "normal",   # 9am: switch to normal mode
-    18: "dark",    # 6pm: switch to dark mode
+    18: "night",   # 6pm: switch to night mode
     1: "off"       # 1am: turn display off
 }
 ```
@@ -198,7 +198,7 @@ MODE_SCHEDULE = {
 **How it works:**
 - At 1am: Display turns off (mode: "off")
 - At 9am: Display turns on in normal mode (mode: "normal")
-- At 6pm: Display switches to dark mode (mode: "dark")
+- At 6pm: Display switches to night mode (mode: "night")
 - Mode persists until the next scheduled change
 
 ### Scene Configuration Format
@@ -208,7 +208,7 @@ Scenes can include an optional 4th element specifying time preference:
 ```python
 SCENES = [
     # Format: (scene_class, args, kwargs, preference)
-    ("CubeScene", (), {"num_cubes": 3}, "night"),  # Only in dark mode
+    ("CubeScene", (), {"num_cubes": 3}, "night"),  # Only in night mode
     ("ScrollingImageScene", ("src/images/bg1.png",), {"scroll_speed": 1}, None),  # Both modes
     ("ScrollingImageScene", ("src/images/bg2.png",), {"scroll_speed": 1}),  # Both modes (4th element omitted)
     ("ScrollingImageScene", ("src/images/bg3.png",), {"scroll_speed": 1}, "day"),  # Only in normal mode
@@ -218,8 +218,8 @@ SCENES = [
 ### Scene Time Preferences
 
 - **"day"**: Scene active only in **normal** mode
-- **"night"**: Scene active only in **dark** mode
-- **None** (or omit 4th element): Scene active in **both normal and dark** modes
+- **"night"**: Scene active only in **night** mode
+- **None** (or omit 4th element): Scene active in **both normal and night** modes
 - In **off** mode, no scenes are active regardless of preference
 
 ### Mode Behavior
@@ -229,7 +229,7 @@ SCENES = [
 - Uses standard image files
 - HUD displays normally
 
-**Dark Mode:**
+**Night Mode:**
 - Shows scenes with preference "night" or None
 - Automatically uses "_night.png" image variants when available (falls back to standard images)
 - HUD colors are dimmed (configurable via `NIGHT_MODE_DIM_FACTOR`)
@@ -248,8 +248,8 @@ SCENES = [
 #### 1. Night Image Variants (for image-based scenes)
 
 **How it works:**
-- When in dark mode, image scenes automatically look for images with a "_night" suffix
-- If `src/images/bg1_night.png` exists, it will be used instead of `src/images/bg1.png` in dark mode
+- When in night mode, image scenes automatically look for images with a "_night" suffix
+- If `src/images/bg1_night.png` exists, it will be used instead of `src/images/bg1.png` in night mode
 - If no night variant exists, the original image is used
 - This allows you to create dimmed or color-adjusted versions of images for nighttime viewing
 
@@ -266,7 +266,7 @@ convert src/images/bg1.png -modulate 40,80,100 src/images/bg1_night.png
 ```
 src/images/
   bg1.png         # Day version (used in normal mode)
-  bg1_night.png   # Night version (used in dark mode)
+  bg1_night.png   # Night version (used in night mode)
   bg2.png         # Used in both modes (no night variant)
   stars.png       # Night-only scene
 ```
@@ -274,8 +274,8 @@ src/images/
 #### 2. Color Dimming (for HUD and vector scenes)
 
 **How it works:**
-- The HUD (time/date display) automatically dims its colors in dark mode
-- Vector scenes (like CubeScene) dim their generated colors in dark mode
+- The HUD (time/date display) automatically dims its colors in night mode
+- Vector scenes (like CubeScene) dim their generated colors in night mode
 - Dimming is controlled by `NIGHT_MODE_DIM_FACTOR` config setting (default: 0.3 = 30% brightness)
 
 **Configuration:**
@@ -286,7 +286,7 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # Range: 0.0-1.0 (0.3 = 30% brightness)
 
 **Implementation:**
 - The `dim_color(r, g, b, factor)` utility function multiplies RGB values by the dim factor
-- HUD creates dimmed versions of white and orange text colors in dark mode
+- HUD creates dimmed versions of white and orange text colors in night mode
 - Vector scenes apply dimming to their dynamically generated colors
 - This ensures all visual elements (images, text, graphics) are dimmer at night
 
@@ -313,7 +313,7 @@ The application includes several built-in scene types for different visual effec
 - 3D rotating wireframe cubes
 - Color cycling animation
 - Configurable number of cubes
-- Automatically dims colors in dark mode
+- Automatically dims colors in night mode
 - Example: `("CubeScene", (), {"num_cubes": 3}, "night")`
 
 **TetrisScene:**
@@ -322,7 +322,7 @@ The application includes several built-in scene types for different visual effec
 - Random horizontal movement and rotation while falling
 - Blocks continuously stack up (no line clearing)
 - Grid resets after configurable interval (default: 60 seconds)
-- Automatically dims colors in dark mode
+- Automatically dims colors in night mode
 - Configurable fall speed (default: 0.1 seconds per row)
 - Configurable reset interval (default: 60 seconds)
 - Example: `("TetrisScene", (), {"fall_speed": 0.1, "reset_interval": 60.0}, "night")`
@@ -409,12 +409,12 @@ DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
 ("ScrollingImageScene", ("src/images/daytime.png",), {}, "day"),
 ("StaticImageScene", ("src/images/work.png",), {}, "day"),
 
-# Evening/night scenes (6pm-1am in dark mode)
+# Evening/night scenes (6pm-1am in night mode)
 ("CubeScene", (), {"num_cubes": 3}, "night"),
 ("TetrisScene", (), {"fall_speed": 0.01, "reset_interval": 60.0}, "night"),
 ("ScrollingImageScene", ("src/images/stars.png",), {"scroll_speed": 0.3}, "night"),
 
-# Always available (shown in both normal and dark modes)
+# Always available (shown in both normal and night modes)
 ("ScrollingImageScene", ("src/images/clouds.png",), {}),
 ("StaticImageScene", ("src/images/abstract.png",), {}, None),
 ```
@@ -425,7 +425,7 @@ DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
 - `get_current_hour(rtc)`: Extract current hour (0-23) from RTC
 - `get_current_mode(rtc, mode_schedule)`: Determine current display mode from hour and schedule
 - `is_scene_active_in_mode(scene_preference, mode)`: Check if scene should be active in given mode
-- `resolve_image_path_for_mode(image_path, mode)`: Resolve image path to night variant if in dark mode
+- `resolve_image_path_for_mode(image_path, mode)`: Resolve image path to night variant if in night mode
 
 **Date/time formatting functions:**
 - `format_time(rtc, format_string)`: Format time using custom format string with tokens (HH, MM, SS, etc.)
@@ -459,8 +459,8 @@ To add new scene types:
 
        def render(self):
            # Render scene content
-           # For vector/generated graphics, dim colors in dark mode:
-           # if self.display_mode == "dark":
+           # For vector/generated graphics, dim colors in night mode:
+           # if self.display_mode == "night":
            #     r, g, b = config.dim_color(r, g, b)
            pass
 
@@ -484,5 +484,5 @@ To add new scene types:
 - Consider frame timing - aim for consistent 60fps performance
 - **Night Mode Support**:
   - For image scenes: create "_night.png" variants of your images
-  - For vector/generated graphics: use `config.dim_color()` to dim RGB values in dark mode
+  - For vector/generated graphics: use `config.dim_color()` to dim RGB values in night mode
   - Accept `display_mode` parameter in `__init__()` to enable mode-aware rendering

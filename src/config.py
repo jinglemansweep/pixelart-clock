@@ -13,20 +13,20 @@ SCENE_SELECTION = "sequential"  # "sequential" or "random"
 IMAGES_PATH = "images"
 
 # Display Mode Configuration
-# Maps hour (0-23) to display mode: "normal", "dark", or "off"
+# Maps hour (0-23) to display mode: "normal", "night", or "off"
 # Only specify hours where mode changes (mode persists until next change)
-# Example: {9: "normal", 18: "dark", 1: "off"} means:
+# Example: {9: "normal", 18: "night", 1: "off"} means:
 #   - 1am-8:59am: off
 #   - 9am-5:59pm: normal
-#   - 6pm-12:59am: dark
+#   - 6pm-12:59am: night
 MODE_SCHEDULE = {
     9: "normal",   # 9am: switch to normal mode
-    21: "dark",    # 6pm: switch to dark mode
-    23: "off"       # 9pm: turn display off
+    21: "night",   # 9pm: switch to night mode
+    23: "off"      # 11pm: turn display off
 }
 
 # Night mode color dimming factor (0.0-1.0)
-# Applied to HUD and vector scene colors in dark mode
+# Applied to HUD and vector scene colors in night mode
 NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness
 
 # Manual Scene Configuration
@@ -36,8 +36,8 @@ NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness
 # kwargs: keyword arguments (e.g., scroll_speed=2)
 # time_preference: "day", "night", or None (both)
 #   - "day": shows only in normal mode
-#   - "night": shows only in dark mode
-#   - None: shows in both normal and dark modes (omit 4th element or set to None)
+#   - "night": shows only in night mode
+#   - None: shows in both normal and night modes (omit 4th element or set to None)
 
 SCENES = [
     ("CubeScene", (), {"num_cubes": 3}),

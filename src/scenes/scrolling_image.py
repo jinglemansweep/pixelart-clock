@@ -18,14 +18,14 @@ class ScrollingImageScene(Scene):
         else:
             self.image_path = image_path
 
-        # Resolve mode-specific image variant (e.g., _night.png for dark mode)
+        # Resolve mode-specific image variant (e.g., _night.png for night mode)
         mode = display_mode if display_mode is not None else "normal"
         self.resolved_image_path = time_utils.resolve_image_path_for_mode(self.image_path, mode)
 
         self.scroll_speed = scroll_speed if scroll_speed is not None else config.SCROLL_SPEED
         self.x_pos = 0.0  # Initialize as float to handle fractional scroll speeds
 
-        # Load the resolved image (night variant if available in dark mode)
+        # Load the resolved image (night variant if available in night mode)
         self.png_decoder.open_file(self.resolved_image_path)
         print(f"ScrollingImageScene loaded: {self.resolved_image_path}")
 

@@ -220,8 +220,8 @@ class TetrisScene(Scene):
                 if self.grid[y][x] is not None:
                     r, g, b = self.grid[y][x]
 
-                    # Dim in dark mode
-                    if self.display_mode == "dark":
+                    # Dim in night mode
+                    if self.display_mode == "night":
                         r, g, b = config.dim_color(r, g, b)
 
                     pen = self.display.create_pen(r, g, b)
@@ -235,8 +235,8 @@ class TetrisScene(Scene):
         if self.current_piece:
             r, g, b = self.current_piece.color
 
-            # Dim in dark mode
-            if self.display_mode == "dark":
+            # Dim in night mode
+            if self.display_mode == "night":
                 r, g, b = config.dim_color(r, g, b)
 
             pen = self.display.create_pen(r, g, b)

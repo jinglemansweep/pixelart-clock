@@ -155,8 +155,8 @@ class CubeScene(Scene):
         g = max(0, min(255, g))
         b = max(0, min(255, b))
 
-        # Dim colors in dark mode
-        if self.display_mode == "dark":
+        # Dim colors in night mode
+        if self.display_mode == "night":
             r, g, b = config.dim_color(r, g, b)
 
         cube_pen = self.display.create_pen(r, g, b)

@@ -45,8 +45,8 @@ class HUD:
         # Get current display mode to determine if we should dim colors
         current_mode = time_utils.get_current_mode(self.rtc, config.MODE_SCHEDULE)
 
-        # Use dimmed colors in dark mode
-        if current_mode == "dark":
+        # Use dimmed colors in night mode
+        if current_mode == "night":
             # Create dimmed white and orange colors
             white_r, white_g, white_b = config.dim_color(255, 255, 255)
             orange_r, orange_g, orange_b = config.dim_color(255, 117, 24)
