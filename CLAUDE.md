@@ -118,7 +118,7 @@ The application uses a modular scene-based architecture that separates scene ren
 ### Application Modules
 - `main.py`: Main application entry point and hardware initialization
 - `config.py`: Centralized configuration settings
-- `scenes.py`: Scene classes and base scene interface
+- `scenes/*.py`: Scene classes and base scene interface
 - `hud.py`: HUD overlay rendering system
 - `scene_manager.py`: Scene transition and timing management
 

@@ -1,2 +1,3 @@
 src/images/
 __pycache__
+**/secrets.py
