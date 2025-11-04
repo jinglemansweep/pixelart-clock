@@ -24,7 +24,7 @@ Transform your Interstate 75W into a living canvas that combines beautiful pixel
 - **🎬 Multiple Scene Types**: Static images, scrolling backgrounds, animated vector graphics, and more
 - **🌓 Day/Night Modes**: Automatic brightness control with dimmed night variants
 - **⏰ Smart Scheduling**: Configure when your display is on, in normal mode, or night mode
-- **🎮 Built-in Scenes**: Retro gaming scenes, cyberpunk landscapes, 3D cubes, and Tetris simulation
+- **🎮 Built-in Scenes**: Retro gaming scenes, cyberpunk landscapes, 3D cubes, Tetris, and Asteroids
 - **🎨 Easy Customization**: Add your own pixel art with simple configuration
 - **💾 Memory Efficient**: Designed for MicroPython's limited resources
 - **📅 Flexible Date/Time**: Customizable date and time formats with 12/24-hour support
@@ -44,6 +44,20 @@ Watch Tetris pieces fall, rotate, and stack up automatically. Features all 7 cla
 ```python
 ("TetrisScene", (), {"fall_speed": 0.1, "reset_interval": 60.0})
 ```
+
+#### **AsteroidsScene** - Classic Asteroids Arcade Game
+Experience the classic Asteroids arcade game with an automated ship that thrusts, rotates, and fires lasers. Asteroids split into smaller pieces when destroyed, creating dynamic retro gameplay.
+```python
+("AsteroidsScene", (), {"num_asteroids": 5})
+```
+
+**Features:**
+- Vector-based wireframe graphics (ship, asteroids, lasers)
+- Automated ship with 70% thrust frequency and 50% rotation frequency
+- Asteroids split on destruction: Large → Medium → Small
+- Fast-moving laser projectiles with collision detection
+- Screen-wrapping physics for authentic arcade feel
+- Perfect for night mode with cyan ship, gray asteroids, and yellow lasers
 
 ### Image-Based Scenes
 
@@ -398,7 +412,7 @@ The included pixel art scenes come from various talented artists:
 
 ## 📝 License
 
-This project is released under the MIT License. See [LICENSE](LICENSE) for details.
+This project is released under the GNU General Public License. See [LICENSE](LICENSE) for details.
 
 ## 🤝 Contributing
 

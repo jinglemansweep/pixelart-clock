@@ -92,6 +92,7 @@ The application uses a modular scene-based architecture that separates scene ren
 - **StaticImageScene** (`src/scenes/static_image.py`): Static background image display
 - **CubeScene** (`src/scenes/cube.py`): 3D rotating wireframe cubes with color cycling
 - **TetrisScene** (`src/scenes/tetris.py`): Automated Tetris simulation with falling pieces
+- **AsteroidsScene** (`src/scenes/asteroids.py`): Classic Asteroids arcade game with ship, asteroids, and lasers
 - Memory-efficient design using shared PNG decoder
 - Vector scenes support day/night color dimming
 
@@ -336,6 +337,27 @@ The application includes several built-in scene types for different visual effec
 - Configurable grid dimensions (default: 16 wide × 6 tall visible, 10 tall total including spawn area)
 - Block size automatically scaled to fit display (currently ~10 pixels per block)
 - Periodic grid reset to keep scene dynamic
+
+**AsteroidsScene:**
+- Classic Asteroids arcade game simulation
+- Vector-based wireframe graphics (ship, asteroids, lasers)
+- Automated ship with dynamic movement and rotation
+- Ship thrusts 70% of the time, rotates 50% of the time
+- Lasers destroy asteroids and split them into smaller pieces
+- Automatically dims colors in night mode
+- Configurable asteroid count (default: 5)
+- Example: `("AsteroidsScene", (), {"num_asteroids": 5}, "night")`
+
+**Features:**
+- Triangle ship with animated thrust flame
+- Random polygonal asteroids (3 sizes: large, medium, small)
+- Asteroids split on destruction: Large→2-3 Medium→2-3 Small→destroyed
+- Fast-moving laser projectiles with collision detection
+- Screen-wrapping physics for all objects
+- Continuous asteroid spawning to maintain count
+- Ship colors: Cyan wireframe
+- Asteroid colors: Light gray
+- Laser colors: Yellow-white
 
 ## Date and Time Formatting
 
