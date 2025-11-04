@@ -408,18 +408,6 @@ Contributions are welcome! Feel free to:
 - Improve documentation
 - Report bugs or request features
 
-## 💡 Ideas for Enhancement
-
-- Weather overlay with OpenWeatherMap API
-- RSS feed ticker
-- Spotify now playing display
-- MQTT integration for IoT control
-- Conway's Game of Life scene
-- Matrix rain effect
-- Music visualizer with audio input
-- Calendar event display
-- Crypto/stock ticker
-
 ---
 
 <div align="center">
