@@ -21,6 +21,33 @@ The background should be controlled by a scene. A typical scene would be to disp
 * Display: 256px wide x 64px tall (2 x 128x64 panels arranged horizontally)
 * Input: No physical (GPIO) buttons present
 
+## Project Structure
+
+The project is organized with all MicroPython code in the `src/` directory for easy deployment to the Interstate 75W board:
+
+```
+pixelart-clock/
+├── src/                    # MicroPython code (deploy this directory to the board)
+│   ├── main.py            # Main application entry point
+│   ├── config.py          # Configuration settings
+│   ├── scene_manager.py   # Scene transition management
+│   ├── hud.py             # HUD overlay system
+│   ├── time_utils.py      # Time/date formatting utilities
+│   ├── secrets.py         # WiFi credentials (gitignored)
+│   ├── images/            # Background PNG images
+│   └── scenes/            # Scene modules
+│       ├── base.py        # Base Scene class
+│       ├── scrolling_image.py
+│       ├── static_image.py
+│       ├── cube.py
+│       └── tetris.py
+├── examples/              # Example code and reference materials
+├── CLAUDE.md             # This file - project documentation
+└── README.md             # User-facing documentation
+```
+
+**Deployment:** Copy all files from the `src/` directory to the root of the Interstate 75W board's filesystem using Thonny, mpremote, or similar MicroPython tools.
+
 ## Resources
 
 * [Getting Started with Interstate 75W](https://learn.pimoroni.com/article/getting-started-with-interstate-75)
@@ -31,12 +58,14 @@ The background should be controlled by a scene. A typical scene would be to disp
 
 ### Running the Clock
 ```bash
-# Deploy to Interstate 75W (requires MicroPython REPL or IDE like Thonny)
-python main.py
+# Deploy src/ directory contents to Interstate 75W board
+# Using Thonny: Open files from src/ and save to board
+# Using mpremote: mpremote cp -r src/* :
+# The board will automatically run main.py on boot
 ```
 
 ### Adding Background Images
-- Place PNG images (256x64 pixels) in the `images/` directory
+- Place PNG images (256x64 pixels) in the `src/images/` directory
 - The application randomly selects one image at startup
 - Images scroll horizontally behind the clock display
 
@@ -46,7 +75,7 @@ The application uses a modular scene-based architecture that separates scene ren
 
 ### Core Components
 
-#### Configuration System (`config.py`)
+#### Configuration System (`src/config.py`)
 - Centralized configuration for display, scenes, and HUD settings
 - `SCENE_DURATION`: How long each scene runs (default: 60 seconds)
 - `SCENE_SELECTION`: Scene transition mode ("sequential" or "random")
@@ -57,39 +86,39 @@ The application uses a modular scene-based architecture that separates scene ren
 - **Color Utilities**: `dim_color(r, g, b, factor)` dims RGB values for night mode
 - **Date/Time Formats**: `TIME_FORMAT` and `DATE_FORMAT` define custom display formats
 
-#### Scene System (`scenes.py`)
-- **Base Scene Class**: Interface with `update()`, `render()`, and `cleanup()` methods
-- **ScrollingImageScene**: Horizontally scrolling background images
-- **StaticImageScene**: Static background image display
-- **CubeScene**: 3D rotating wireframe cubes with color cycling
-- **TetrisScene**: Automated Tetris simulation with falling pieces and line clearing
+#### Scene System (`src/scenes/*.py`)
+- **Base Scene Class** (`src/scenes/base.py`): Interface with `update()`, `render()`, and `cleanup()` methods
+- **ScrollingImageScene** (`src/scenes/scrolling_image.py`): Horizontally scrolling background images
+- **StaticImageScene** (`src/scenes/static_image.py`): Static background image display
+- **CubeScene** (`src/scenes/cube.py`): 3D rotating wireframe cubes with color cycling
+- **TetrisScene** (`src/scenes/tetris.py`): Automated Tetris simulation with falling pieces
 - Memory-efficient design using shared PNG decoder
 - Vector scenes support day/night color dimming
 
-#### HUD System (`hud.py`)
+#### HUD System (`src/hud.py`)
 - **HUD Class**: Renders time, date, and future overlay information
 - Separated from scene logic for clean overlay rendering
 - Configurable positioning and styling with shadow effects
 - Supports custom date/time formats with flexible token-based formatting
 - Automatically dims colors in dark mode
 
-#### Scene Management (`scene_manager.py`)
+#### Scene Management (`src/scene_manager.py`)
 - **SceneManager Class**: Handles scene transitions and timing
 - Supports sequential or random scene selection
 - Automatic scene switching based on configurable duration
 - Proper resource cleanup during transitions
 
-#### Hardware Initialization (`main.py:14-23`)
+#### Hardware Initialization (`src/main.py:14-23`)
 - Configures Interstate75 display with 256x64 resolution
 - Sets up RTC for timekeeping
 - Initializes display colors and modular components
 
-#### Network Management (`main.py:25-69`)
-- Requires `secrets.py` file with `WIFI_SSID` and `WIFI_PASSWORD` constants
+#### Network Management (`src/main.py:25-69`)
+- Requires `src/secrets.py` file with `WIFI_SSID` and `WIFI_PASSWORD` constants
 - `network_connect()`: Handles WiFi connection with power saving disabled for compatibility
 - `sync_time()`: Synchronizes clock via NTP when WiFi is available
 
-#### Main Loop (`main.py:88-102`)
+#### Main Loop (`src/main.py:88-102`)
 - Clean separation: scene update → scene render → HUD render → display update
 - Maintains 60fps performance with 0.01s frame timing
 - Simple 4-step render cycle
@@ -112,28 +141,29 @@ The application uses a modular scene-based architecture that separates scene ren
 - `interstate75`: Hardware-specific display driver
 
 ### Required Files
-- `secrets.py`: Must contain `WIFI_SSID` and `WIFI_PASSWORD` string constants
-- `images/*.png`: Background images (256x64 pixels recommended)
+- `src/secrets.py`: Must contain `WIFI_SSID` and `WIFI_PASSWORD` string constants
+- `src/images/*.png`: Background images (256x64 pixels recommended)
 
 ### Application Modules
-- `main.py`: Main application entry point and hardware initialization
-- `config.py`: Centralized configuration settings
-- `scenes/*.py`: Scene classes and base scene interface
-- `hud.py`: HUD overlay rendering system
-- `scene_manager.py`: Scene transition and timing management
+- `src/main.py`: Main application entry point and hardware initialization
+- `src/config.py`: Centralized configuration settings
+- `src/scenes/*.py`: Scene classes and base scene interface
+- `src/hud.py`: HUD overlay rendering system
+- `src/scene_manager.py`: Scene transition and timing management
+- `src/time_utils.py`: Time/date formatting and display mode utilities
 
 ## Image Requirements
 
 Background images should be:
 - PNG format
 - 256x64 pixels (matches display resolution)
-- Placed in the `images/` directory
+- Placed in the `src/images/` directory
 - Optimized for LED matrix display (high contrast works best)
 
 ## Error Handling
 
 The application includes error handling for:
-- Missing `secrets.py` file
+- Missing `src/secrets.py` file
 - Empty WiFi credentials
 - Network connection failures
 - NTP synchronization failures
@@ -153,7 +183,7 @@ Three display modes are available:
 
 ### Mode Scheduling Configuration
 
-Configure display modes by hour in `config.py`:
+Configure display modes by hour in `src/config.py`:
 
 ```python
 # MODE_SCHEDULE maps hour (0-23) to mode ("normal", "dark", "off")
@@ -179,9 +209,9 @@ Scenes can include an optional 4th element specifying time preference:
 SCENES = [
     # Format: (scene_class, args, kwargs, preference)
     ("CubeScene", (), {"num_cubes": 3}, "night"),  # Only in dark mode
-    ("ScrollingImageScene", ("images/bg1.png",), {"scroll_speed": 1}, None),  # Both modes
-    ("ScrollingImageScene", ("images/bg2.png",), {"scroll_speed": 1}),  # Both modes (4th element omitted)
-    ("ScrollingImageScene", ("images/bg3.png",), {"scroll_speed": 1}, "day"),  # Only in normal mode
+    ("ScrollingImageScene", ("src/images/bg1.png",), {"scroll_speed": 1}, None),  # Both modes
+    ("ScrollingImageScene", ("src/images/bg2.png",), {"scroll_speed": 1}),  # Both modes (4th element omitted)
+    ("ScrollingImageScene", ("src/images/bg3.png",), {"scroll_speed": 1}, "day"),  # Only in normal mode
 ]
 ```
 
@@ -219,22 +249,22 @@ SCENES = [
 
 **How it works:**
 - When in dark mode, image scenes automatically look for images with a "_night" suffix
-- If `images/bg1_night.png` exists, it will be used instead of `images/bg1.png` in dark mode
+- If `src/images/bg1_night.png` exists, it will be used instead of `src/images/bg1.png` in dark mode
 - If no night variant exists, the original image is used
 - This allows you to create dimmed or color-adjusted versions of images for nighttime viewing
 
 **Creating night variants:**
 ```bash
 # Create a dimmed version using ImageMagick (30% brightness)
-convert images/bg1.png -modulate 30 images/bg1_night.png
+convert src/images/bg1.png -modulate 30 src/images/bg1_night.png
 
 # Create with slight desaturation for a more natural night look
-convert images/bg1.png -modulate 40,80,100 images/bg1_night.png
+convert src/images/bg1.png -modulate 40,80,100 src/images/bg1_night.png
 ```
 
 **Example image organization:**
 ```
-images/
+src/images/
   bg1.png         # Day version (used in normal mode)
   bg1_night.png   # Night version (used in dark mode)
   bg2.png         # Used in both modes (no night variant)
@@ -250,7 +280,7 @@ images/
 
 **Configuration:**
 ```python
-# In config.py
+# In src/config.py
 NIGHT_MODE_DIM_FACTOR = 0.3  # Range: 0.0-1.0 (0.3 = 30% brightness)
 ```
 
@@ -270,12 +300,12 @@ The application includes several built-in scene types for different visual effec
 - Horizontally scrolling background images
 - Configurable scroll speed
 - Supports night mode image variants (`_night.png` suffix)
-- Example: `("ScrollingImageScene", ("images/bg.png",), {"scroll_speed": 1})`
+- Example: `("ScrollingImageScene", ("src/images/bg.png",), {"scroll_speed": 1})`
 
 **StaticImageScene:**
 - Static background image display
 - Supports night mode image variants (`_night.png` suffix)
-- Example: `("StaticImageScene", ("images/bg.png",), {})`
+- Example: `("StaticImageScene", ("src/images/bg.png",), {})`
 
 ### Vector Scenes
 
@@ -290,12 +320,12 @@ The application includes several built-in scene types for different visual effec
 - Automated Tetris simulation
 - Falling pieces with random colors and rotations
 - Random horizontal movement and rotation while falling
-- No line clearing - blocks continuously stack up
+- Blocks continuously stack up (no line clearing)
 - Grid resets after configurable interval (default: 60 seconds)
 - Automatically dims colors in dark mode
-- Configurable fall speed (default: 0.01 seconds per row)
+- Configurable fall speed (default: 0.1 seconds per row)
 - Configurable reset interval (default: 60 seconds)
-- Example: `("TetrisScene", (), {"fall_speed": 0.01, "reset_interval": 60.0}, "night")`
+- Example: `("TetrisScene", (), {"fall_speed": 0.1, "reset_interval": 60.0}, "night")`
 
 **Features:**
 - 7 classic Tetris shapes (I, O, T, S, Z, J, L)
@@ -303,8 +333,8 @@ The application includes several built-in scene types for different visual effec
 - 30% chance of horizontal movement per step (left or right)
 - 20% chance of rotation per step
 - Continuous piece spawning - never stops
-- Configurable grid dimensions (default: 64 wide × 16 tall visible)
-- Block size automatically scaled to fit display
+- Configurable grid dimensions (default: 16 wide × 6 tall visible, 10 tall total including spawn area)
+- Block size automatically scaled to fit display (currently ~10 pixels per block)
 - Periodic grid reset to keep scene dynamic
 
 ## Date and Time Formatting
@@ -313,7 +343,7 @@ The HUD supports flexible, customizable date and time formats using token-based 
 
 ### Configuration
 
-Configure formats in `config.py`:
+Configure formats in `src/config.py`:
 
 ```python
 # Time format (default: "HH:MM:SS")
@@ -376,20 +406,20 @@ DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
 
 ```python
 # Morning/daytime scenes (9am-6pm in normal mode)
-("ScrollingImageScene", ("images/daytime.png",), {}, "day"),
-("StaticImageScene", ("images/work.png",), {}, "day"),
+("ScrollingImageScene", ("src/images/daytime.png",), {}, "day"),
+("StaticImageScene", ("src/images/work.png",), {}, "day"),
 
 # Evening/night scenes (6pm-1am in dark mode)
 ("CubeScene", (), {"num_cubes": 3}, "night"),
 ("TetrisScene", (), {"fall_speed": 0.01, "reset_interval": 60.0}, "night"),
-("ScrollingImageScene", ("images/stars.png",), {"scroll_speed": 0.3}, "night"),
+("ScrollingImageScene", ("src/images/stars.png",), {"scroll_speed": 0.3}, "night"),
 
 # Always available (shown in both normal and dark modes)
-("ScrollingImageScene", ("images/clouds.png",), {}),
-("StaticImageScene", ("images/abstract.png",), {}, None),
+("ScrollingImageScene", ("src/images/clouds.png",), {}),
+("StaticImageScene", ("src/images/abstract.png",), {}, None),
 ```
 
-### Time Utilities (`time_utils.py`)
+### Time Utilities (`src/time_utils.py`)
 
 **Display mode functions:**
 - `get_current_hour(rtc)`: Extract current hour (0-23) from RTC
@@ -411,8 +441,12 @@ DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
 
 To add new scene types:
 
-1. **Create Scene Class**: Inherit from `Scene` base class in `scenes.py`
+1. **Create Scene Class**: Create a new file in `src/scenes/` (e.g., `src/scenes/custom.py`) and inherit from `Scene` base class
    ```python
+   # src/scenes/custom.py
+   from .base import Scene
+   import config
+
    class CustomScene(Scene):
        def __init__(self, display, png_decoder, *args, display_mode=None):
            super().__init__(display, png_decoder)
@@ -435,12 +469,12 @@ To add new scene types:
            pass
    ```
 
-2. **Register Scene**: Add to scene manager in `main.py` or modify `create_default_scene_manager()`
+2. **Register Scene**: Add to scene manager in `src/main.py` or modify `create_default_scene_manager()` in `src/scene_manager.py`
    ```python
    scene_manager.add_scene_class(CustomScene, arg1, arg2)
    ```
 
-3. **Configuration**: Add scene-specific settings to `config.py` if needed
+3. **Configuration**: Add scene-specific settings to `src/config.py` if needed
 
 ### Scene Development Tips
 - Keep memory usage minimal - MicroPython has limited RAM
