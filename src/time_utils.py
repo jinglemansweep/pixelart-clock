@@ -1,12 +1,120 @@
 """
-Time utilities for display mode scheduling and formatting
+Time utilities for display mode scheduling, formatting, and timezone/DST handling
 """
+import time as _time
 import os
 
-def get_current_hour(rtc):
-    """Get the current hour (0-23) from RTC"""
+import config
+
+
+def _last_sunday_of_month(year, month):
+    """Returns the day of the month (1-31) of the last Sunday in the given month."""
+    if month == 12:
+        ny, nm = year + 1, 1
+    else:
+        ny, nm = year, month + 1
+
+    next_midnight = _time.mktime((ny, nm, 1, 0, 0, 0, 0, 0))
+    last_epoch = next_midnight - 86400
+    last = _time.localtime(last_epoch)
+    last_day = last[2]
+    last_dow = last[6]
+    return last_day - ((last_dow + 1) % 7)
+
+
+def _nth_sunday_of_month(year, month, n):
+    """Returns the day of the month (1-31) of the nth Sunday in the given month."""
+    ep = _time.mktime((year, month, 1, 0, 0, 0, 0, 0))
+    first_dow = _time.localtime(ep)[6]
+    if first_dow == 6:
+        days_to_first = 0
+    else:
+        days_to_first = 6 - first_dow
+    return 1 + days_to_first + (n - 1) * 7
+
+
+def _is_dst_active(rtc):
+    """
+    Determine whether DST is currently active based on the configured rules.
+
+    Evaluates the DST transition window against the current RTC time (which is
+    stored as UTC). EU transitions are at fixed UTC times (01:00). US
+    transitions are at 02:00 local time, converted to UTC using the configured
+    offset.
+
+    Returns:
+        bool: True if DST is currently in effect.
+    """
+    dst_cfg = config.DST_CONFIG
+    if dst_cfg is None:
+        return False
+
     now = rtc.datetime()
-    return now[4]  # Hour is at index 4 in datetime tuple
+    year, month, day, _, hour, minute, second, _ = now
+    now_t = (year, month, day, hour, minute, second, 0, 0)
+    now_epoch = _time.mktime(now_t)
+
+    base = config.TIMEZONE_OFFSET
+
+    if dst_cfg == "eu":
+        start_day = _last_sunday_of_month(year, 3)
+        end_day = _last_sunday_of_month(year, 10)
+        start_epoch = _time.mktime((year, 3, start_day, 0, 0, 0, 0, 0)) + 3600
+        end_epoch = _time.mktime((year, 10, end_day, 0, 0, 0, 0, 0)) + 3600
+        return start_epoch <= now_epoch < end_epoch
+
+    elif dst_cfg == "us":
+        start_day = _nth_sunday_of_month(year, 3, 2)
+        end_day = _nth_sunday_of_month(year, 11, 1)
+        dst_offset = config.DST_OFFSET
+        start_epoch = (
+            _time.mktime((year, 3, start_day, 0, 0, 0, 0, 0))
+            + int((2.0 - base) * 3600)
+        )
+        end_epoch = (
+            _time.mktime((year, 11, end_day, 0, 0, 0, 0, 0))
+            + int((2.0 - (base + dst_offset)) * 3600)
+        )
+        return start_epoch <= now_epoch < end_epoch
+
+    return False
+
+
+def get_local_datetime(rtc):
+    """
+    Convert the RTC's UTC datetime to local time using the configured
+    timezone offset and DST rules.
+
+    The returned tuple follows the same format as time.localtime():
+        (year, month, mday, hour, minute, second, weekday, yearday)
+    where weekday is 0=Monday … 6=Sunday.
+
+    When TIMEZONE_OFFSET is 0 and DST_CONFIG is None the conversion is a
+    fast no-op (the RTC datetime tuple is simply reshaped to the localtime
+    format).
+    """
+    base = config.TIMEZONE_OFFSET
+
+    if base == 0 and config.DST_CONFIG is None:
+        now = rtc.datetime()
+        return (now[0], now[1], now[2], now[4], now[5], now[6], now[3], 0)
+
+    total_offset = float(base)
+    if _is_dst_active(rtc):
+        total_offset += config.DST_OFFSET
+
+    now = rtc.datetime()
+    utc_t = (now[0], now[1], now[2], now[4], now[5], now[6], 0, 0)
+    utc_epoch = _time.mktime(utc_t)
+    local_epoch = utc_epoch + int(total_offset * 3600)
+    return _time.localtime(local_epoch)
+
+
+def get_current_hour(rtc):
+    """Get the current hour (0-23) adjusted for timezone and DST."""
+    local = get_local_datetime(rtc)
+    return local[3]
+
 
 def get_current_mode(rtc, mode_schedule):
     """
@@ -50,6 +158,7 @@ def get_current_mode(rtc, mode_schedule):
 
     return current_mode
 
+
 def is_scene_active_in_mode(scene_preference, mode):
     """
     Check if a scene should be active in the given display mode.
@@ -64,22 +173,19 @@ def is_scene_active_in_mode(scene_preference, mode):
     Returns:
         bool: True if scene should be active in this mode
     """
-    # In off mode, no scenes are active
     if mode == "off":
         return False
 
-    # No preference means active in all non-off modes
     if scene_preference is None:
         return True
 
-    # Check scene preference against mode
     if scene_preference == "day":
         return mode == "normal"
     elif scene_preference == "night":
         return mode == "night"
 
-    # Unknown preference, default to active
     return True
+
 
 def resolve_image_path_for_mode(image_path, mode):
     """
@@ -95,38 +201,27 @@ def resolve_image_path_for_mode(image_path, mode):
 
     Returns:
         str: Resolved image path (night variant if available in night mode, otherwise original)
-
-    Examples:
-        >>> resolve_image_path_for_mode("images/bg1.png", "night")
-        "images/bg1_night.png"  # if file exists
-        >>> resolve_image_path_for_mode("images/bg1.png", "normal")
-        "images/bg1.png"
     """
-    # Only check for night variant in night mode
     if mode != "night" or not image_path:
         return image_path
 
-    # Split path into base and extension
     if '.' in image_path:
         base_path, ext = image_path.rsplit('.', 1)
         night_variant_path = f"{base_path}_night.{ext}"
     else:
-        # No extension (unlikely for image files, but handle it)
         night_variant_path = f"{image_path}_night"
 
-    # Check if night variant exists
     try:
-        # Try to stat the file to see if it exists
         os.stat(night_variant_path)
         print(f"Using night variant: {night_variant_path}")
         return night_variant_path
     except OSError:
-        # Night variant doesn't exist, use original
         return image_path
+
 
 def format_time(rtc, format_string):
     """
-    Format time using a custom format string.
+    Format time using a custom format string. Applies timezone/DST offset.
 
     Supported tokens:
         HH - 24-hour with leading zero (00-23)
@@ -147,40 +242,34 @@ def format_time(rtc, format_string):
     Returns:
         str: Formatted time string
     """
-    now = rtc.datetime()
-    hour = now[4]
-    minute = now[5]
-    second = now[6]
+    local = get_local_datetime(rtc)
+    hour = local[3]
+    minute = local[4]
+    second = local[5]
 
-    # Calculate 12-hour format
     hour_12 = hour % 12
     if hour_12 == 0:
         hour_12 = 12
     am_pm = "AM" if hour < 12 else "PM"
     a_p = "A" if hour < 12 else "P"
 
-    # Use placeholders to avoid conflicts during replacement
-    # Replace longer tokens first, using unique placeholders
     replacements = [
-        ("HH", "\x01"),  # Placeholder for 24-hour with zero
-        ("hh", "\x02"),  # Placeholder for 12-hour with zero
-        ("MM", "\x03"),  # Placeholder for minutes with zero
-        ("SS", "\x04"),  # Placeholder for seconds with zero
-        ("AP", "\x05"),  # Placeholder for AM/PM
-        ("H", "\x06"),   # Placeholder for 24-hour no zero
-        ("h", "\x07"),   # Placeholder for 12-hour no zero
-        ("M", "\x08"),   # Placeholder for minutes no zero
-        ("S", "\x09"),   # Placeholder for seconds no zero
-        ("A", "\x0A"),   # Placeholder for A/P
+        ("HH", "\x01"),
+        ("hh", "\x02"),
+        ("MM", "\x03"),
+        ("SS", "\x04"),
+        ("AP", "\x05"),
+        ("H", "\x06"),
+        ("h", "\x07"),
+        ("M", "\x08"),
+        ("S", "\x09"),
+        ("A", "\x0A"),
     ]
 
     result = format_string
-
-    # First pass: replace tokens with placeholders
     for token, placeholder in replacements:
         result = result.replace(token, placeholder)
 
-    # Second pass: replace placeholders with actual values
     result = result.replace("\x01", "{:02d}".format(hour))
     result = result.replace("\x02", "{:02d}".format(hour_12))
     result = result.replace("\x03", "{:02d}".format(minute))
@@ -194,9 +283,10 @@ def format_time(rtc, format_string):
 
     return result
 
+
 def format_date(rtc, format_string):
     """
-    Format date using a custom format string.
+    Format date using a custom format string. Applies timezone/DST offset.
 
     Supported tokens:
         DDDD - Full day name (Monday)
@@ -219,37 +309,32 @@ def format_date(rtc, format_string):
     """
     from config import DAYS_SHORT, DAYS_LONG, MONTHS_SHORT, MONTHS_LONG
 
-    now = rtc.datetime()
-    year = now[0]
-    month = now[1]
-    day = now[2]
-    dow = now[3]  # Day of week (0-6)
+    local = get_local_datetime(rtc)
+    year = local[0]
+    month = local[1]
+    day = local[2]
+    dow = local[6]
 
-    # Use placeholders to avoid conflicts during replacement
-    # Replace longer tokens first, using unique placeholders
     replacements = [
-        ("DDDD", "\x01"),  # Placeholder for full day name
-        ("DDD", "\x02"),   # Placeholder for short day name
-        ("MMMM", "\x03"),  # Placeholder for full month name
-        ("MMM", "\x04"),   # Placeholder for short month name
-        ("YYYY", "\x05"),  # Placeholder for 4-digit year
-        ("YY", "\x06"),    # Placeholder for 2-digit year
-        ("DD", "\x07"),    # Placeholder for day with zero
-        ("D", "\x08"),     # Placeholder for day no zero
-        ("MM", "\x09"),    # Placeholder for month with zero
-        ("M", "\x0A"),     # Placeholder for month no zero
+        ("DDDD", "\x01"),
+        ("DDD", "\x02"),
+        ("MMMM", "\x03"),
+        ("MMM", "\x04"),
+        ("YYYY", "\x05"),
+        ("YY", "\x06"),
+        ("DD", "\x07"),
+        ("D", "\x08"),
+        ("MM", "\x09"),
+        ("M", "\x0A"),
     ]
 
     result = format_string
-
-    # First pass: replace tokens with placeholders
     for token, placeholder in replacements:
         result = result.replace(token, placeholder)
 
-    # Second pass: replace placeholders with actual values
     result = result.replace("\x01", DAYS_LONG[dow])
     result = result.replace("\x02", DAYS_SHORT[dow])
-    result = result.replace("\x03", MONTHS_LONG[month - 1])  # month is 1-12
+    result = result.replace("\x03", MONTHS_LONG[month - 1])
     result = result.replace("\x04", MONTHS_SHORT[month - 1])
     result = result.replace("\x05", str(year))
     result = result.replace("\x06", "{:02d}".format(year % 100))

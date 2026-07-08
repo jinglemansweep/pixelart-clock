@@ -25,6 +25,19 @@ MODE_SCHEDULE = {
     23: "off"      # 11pm: turn display off
 }
 
+# Timezone Configuration
+# Base offset from UTC in hours (supports fractional, e.g. 5.5 for India UTC+5:30)
+TIMEZONE_OFFSET = 0.0
+
+# Daylight Saving Time configuration
+# "eu" = European rules (last Sun Mar/Oct at 01:00 UTC)
+# "us" = US rules (2nd Sun Mar / 1st Sun Nov at 02:00 local)
+# None = no DST
+DST_CONFIG = "eu"
+
+# Additional hours offset during DST (typically 1.0)
+DST_OFFSET = 1.0
+
 # Night mode color dimming factor (0.0-1.0)
 # Applied to HUD and vector scene colors in night mode
 NIGHT_MODE_DIM_FACTOR = 0.3  # 30% brightness

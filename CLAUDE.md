@@ -84,6 +84,7 @@ The application uses a modular scene-based architecture that separates scene ren
 - **Scene Preferences**: Scenes specify day/night preference for mode filtering
 - **Night Mode Dimming**: `NIGHT_MODE_DIM_FACTOR` controls color dimming (default: 0.3)
 - **Color Utilities**: `dim_color(r, g, b, factor)` dims RGB values for night mode
+- **Timezone/DST**: `TIMEZONE_OFFSET`, `DST_CONFIG`, `DST_OFFSET` for local time display
 - **Date/Time Formats**: `TIME_FORMAT` and `DATE_FORMAT` define custom display formats
 
 #### Scene System (`src/scenes/*.py`)
@@ -441,10 +442,70 @@ DATE_FORMAT = "DDD DD/MM/YYYY"  # Short day, numeric date
 ("StaticImageScene", ("src/images/abstract.png",), {}, None),
 ```
 
+## Timezone and DST Configuration
+
+The application handles timezone offset and Daylight Saving Time (DST) entirely in software. The RTC is always set to UTC via NTP, and local time is computed on each read via `time_utils.get_local_datetime()`.
+
+### Why Software-Only?
+
+This MicroPython version does not support a timezone parameter in `ntptime.settime()`. Instead of patching the RTC after each NTP sync, **the RTC stays at UTC** and `time_utils` applies the configured offset and DST rules dynamically whenever time is read. This elegantly handles day/month/year rollover and DST transitions without any need for periodic RTC adjustment.
+
+### Configuration
+
+In `src/config.py`:
+
+```python
+# Base offset from UTC in hours (supports fractional, e.g. 5.5 for India UTC+5:30)
+TIMEZONE_OFFSET = 0.0
+
+# Daylight Saving Time configuration
+# "eu" = European rules (last Sun Mar/Oct at 01:00 UTC)
+# "us" = US rules (2nd Sun Mar / 1st Sun Nov at 02:00 local)
+# None = no DST
+DST_CONFIG = "eu"
+
+# Additional hours offset during DST (typically 1.0)
+DST_OFFSET = 1.0
+```
+
+### DST Rules
+
+| Config | Spring Forward | Fall Back | Regions |
+|--------|---------------|-----------|---------|
+| `"eu"` | Last Sun Mar, 01:00 UTC | Last Sun Oct, 01:00 UTC | UK, EU, Ireland |
+| `"us"` | 2nd Sun Mar, 02:00 local | 1st Sun Nov, 02:00 local | US, Canada |
+| `None` | — | — | No DST |
+
+### How It Works
+
+- `ntptime.settime()` sets the RTC to UTC (unchanged from default behavior)
+- `time_utils.get_local_datetime(rtc)` converts UTC to local time on each call
+- DST status is evaluated dynamically using `time.mktime()` for correct transition boundaries
+- All consumer functions (`get_current_hour`, `format_time`, `format_date`) call `get_local_datetime` internally — no consumer code changes needed
+- A fast-path exists when `TIMEZONE_OFFSET == 0` and DST is disabled (zero-cost conversion)
+
+### Examples
+
+| Location | `TIMEZONE_OFFSET` | `DST_CONFIG` | `DST_OFFSET` |
+|----------|-------------------|--------------|--------------|
+| UK / Portugal | `0.0` | `"eu"` | `1.0` |
+| Central Europe (CET) | `1.0` | `"eu"` | `1.0` |
+| US Eastern | `-5.0` | `"us"` | `1.0` |
+| US Pacific | `-8.0` | `"us"` | `1.0` |
+| India (IST) | `5.5` | `None` | `1.0` |
+| Japan (JST) | `9.0` | `None` | `1.0` |
+| New Zealand | `12.0` | `"us"` | `1.0` |
+
 ### Time Utilities (`src/time_utils.py`)
 
+**Timezone/DST functions:**
+- `get_local_datetime(rtc)`: Convert RTC UTC datetime to local time applying configured offset and DST
+- `_is_dst_active(rtc)`: Evaluate DST status using configured rules (eu/us/None)
+- `_last_sunday_of_month(year, month)`: Helper to find the last Sunday of a month
+- `_nth_sunday_of_month(year, month, n)`: Helper to find the nth Sunday of a month
+
 **Display mode functions:**
-- `get_current_hour(rtc)`: Extract current hour (0-23) from RTC
+- `get_current_hour(rtc)`: Extract current hour (0-23) adjusted for timezone and DST
 - `get_current_mode(rtc, mode_schedule)`: Determine current display mode from hour and schedule
 - `is_scene_active_in_mode(scene_preference, mode)`: Check if scene should be active in given mode
 - `resolve_image_path_for_mode(image_path, mode)`: Resolve image path to night variant if in night mode
